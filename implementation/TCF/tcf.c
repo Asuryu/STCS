@@ -13,7 +13,7 @@
 
 float temps[HISTORY_SIZE][N_HEATERS];
 unsigned int enabled;
-
+float set_point;
 
 void *controlTemp(void* pdata){
     while (enabled)
@@ -30,8 +30,14 @@ int enableTCF(pthread_t *pidThread) {
     return pthread_create(pidThread,NULL, &controlTemp, NULL) != 0 ? -1 : 0;
 }
 
+void disableTCF(pthread_t *pidThread) {
+    enabled = 0;
+    pthread_join(*pidThread,NULL);
+}
 
-
+void setSetPoint(float setPoint) {
+   set_point = setPoint >= -20 && setPoint <= 20 ? setPoint : set_point;
+}
 int main(int argc, char **argv) {
     //memset(&temps, nan, sizeof(temps)); //init array with NaNs so later we can check if it has input temps or not
     enabled = 1;
@@ -41,9 +47,7 @@ int main(int argc, char **argv) {
 
     printf("Press enter to end ");
     getchar();
-    enabled = 0;
-    
+    disableTCF(&pidThread);
 
-    pthread_join(pidThread,NULL);
     return 0;
 }
