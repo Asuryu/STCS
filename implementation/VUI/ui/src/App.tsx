@@ -1,5 +1,5 @@
-import './App.css'
 import { useEffect } from 'react'
+import Dashboard from './Dashboard'
 
 function App() {
   const handleSocket = () => {
@@ -21,7 +21,9 @@ function App() {
 
   return (
     <>
-      <h1>oi12</h1>
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <Dashboard />
+      </div>
     </>
   )
 }
