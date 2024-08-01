@@ -20,7 +20,7 @@ void TSL_init(struct TSL_data *tsl){
 void verify_periods(struct TSL_data *tsl) {
     uint8_t lowerBits = tsl->clock & 0x00FF;
  
-    if ((lowerBits >= 0x00 && lowerBits <= 0x1F) || (lowerBits >= 0x60 && lowerBits <= 0xFF)) {
+    if (lowerBits >= 0x00 || lowerBits >= 0x60){
         tsl->period = NORMAL;
     } else if (lowerBits >= 0x20 && lowerBits <= 0x3F) {
         tsl->period = ECLIPSE;
@@ -146,7 +146,7 @@ int main() {
 
     // Auxiliar for Now
     char heaters_state[4] = {0,0,1,1};
-    
+
 
     while(1){
         usleep(200 * 1000);
