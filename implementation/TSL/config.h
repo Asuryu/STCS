@@ -30,22 +30,25 @@
 
 typedef enum {false, true} bool;
 
-// Define Structcs
-struct ThermalPair {
-    bool heater;
-    float thermistor;
-};
+typedef struct ThermalPair {
+    int heater;
+    double thermistor;
+} ThermalPair;
 
-struct TSL_data{
-    uint16_t clock;
+typedef struct TSL_data {
+    int16_t clock;
     int period;     //period being analyzed
-};
+} TSL_data;
 
+typedef struct {
+    int fd;
+    int *new_heater_states;
+} ThreadArgs;
 
 // Inicialize all the functions
 void TSL_init(struct TSL_data *tsl);
 void verify_periods(struct TSL_data *tsl);
-void setHeaterState(struct ThermalPair* TP_block, char *heater_state);
+void setHeaterState(struct ThermalPair* TP_block, int *heater_state);
 int modify_temperatures(struct ThermalPair* TP_block, int state);
 void write_csv_correct(struct ThermalPair* TP_block, char *timestamp, int state);
 void write_csv_errors(char *error);

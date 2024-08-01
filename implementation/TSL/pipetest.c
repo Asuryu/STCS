@@ -33,11 +33,19 @@ int main() {
         if (select(fd_temp_info_pipe+1,&read_set,NULL,NULL,NULL)>0){
             if(FD_ISSET(fd_temp_info_pipe,&read_set)){
                 char message[100];
-                read(fd_temp_info_pipe, message, 100);
+                read(fd_temp_info_pipe, message, sizeof(message));
                 printf("TSL received: %s\n", message);
-                break;
+
+                // write random combination following the pattern {STATE};{STATE};{STATE};{STATE}
+                char response[100];
+                sprintf(response, "%d;%d;%d;%d", rand() % 3 + 1, rand() % 3 + 1, rand() % 3 + 1, rand() % 3 + 1);
+                write(fd_response_pipe, response, strlen(response) + 1);
+                printf("TSL sent: %s\n", response);
+
             }
         }   
+
+
     }
 
     close(fd_temp_info_pipe);    
