@@ -1,11 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <stdint.h>
+
 #include "config.h"
 
 
@@ -14,29 +7,6 @@
 #define ECLIPSE 2
 #define SUN_EXPOSURE 3
 
-typedef enum {false, true} bool;
-
-
-// Define Structcs
-struct ThermalPair {
-    bool heater;
-    double thermistor;
-};
-
-struct TSL_data{
-    uint16_t clock;
-    int period;     //period being analyzed
-};
-
-
-// Inicialize all the functions
-void TSL_init(struct TSL_data *tsl);
-void verify_periods(struct TSL_data *tsl);
-int setHeaterState(struct ThermalPair TP_block);
-int modify_temperatures(struct ThermalPair* TP_block, int state);
-int write_csv(struct ThermalPair TP_block);
-
-
 // Function to initialize clock and period
 void TSL_init(struct TSL_data *tsl){
     tsl->clock = 0;
@@ -44,15 +14,20 @@ void TSL_init(struct TSL_data *tsl){
 }
 
 
+
 // Function verify the clock period and define the state
 void verify_periods(struct TSL_data *tsl) {
-    uint8_t lowerBits = tsl->clock & 0x00FF;
+    int8_t lowerBits = tsl->clock & 0x00FF;
+    printf("lowerBits: %d\n", lowerBits);
  
-    if ((lowerBits >= 0x00 && lowerBits <= 0x1F) || (lowerBits >= 0x60 && lowerBits <= 0xFF)) {
+    if (lowerBits <= 0x1F || (lowerBits >= 0x60 && lowerBits <= 0xFF)) {
+        printf("NORMAL\n");
         tsl->period = NORMAL;
     } else if (lowerBits >= 0x20 && lowerBits <= 0x3F) {
+        printf("ECLIPSE\n");
         tsl->period = ECLIPSE;
     } else if (lowerBits >= 0x40 && lowerBits <= 0x5F) {
+        printf("SUN_EXPOSURE\n");
         tsl->period = SUN_EXPOSURE;
     }
 }
@@ -69,7 +44,6 @@ int modify_temperatures(struct ThermalPair* TP_block, int state){
         else{
             TP_block->thermistor -= 1;
         }
-        return 0;
         break;
     case ECLIPSE:
         if (TP_block->heater){
@@ -78,7 +52,6 @@ int modify_temperatures(struct ThermalPair* TP_block, int state){
         else{
             TP_block->thermistor -= 7;
         }
-        return 0;
         break;
     case SUN_EXPOSURE:
         if (TP_block->heater){
@@ -87,17 +60,47 @@ int modify_temperatures(struct ThermalPair* TP_block, int state){
         else{
             TP_block->thermistor -= 1;
         }
-        return 0;
         break;
     default:
         return -1;
         break;
     }
+    return 0;
+
 }
 
 
 // Functions and variables for Pipe
 int fd_temp_info_pipe, fd_response_pipe;
+
+void* read_response_thread(void* args) {
+    ThreadArgs *thread_args = (ThreadArgs*)args;
+    int fd = thread_args->fd;
+    int *new_heater_states = thread_args->new_heater_states;
+
+    fd_set read_set;
+    FD_ZERO(&read_set);
+    FD_SET(fd, &read_set);
+
+    printf("TSL waiting for response\n");
+    while(1){
+        if (select(fd + 1, &read_set, NULL, NULL, NULL) > 0) {
+            if (FD_ISSET(fd, &read_set)) {
+                char message[100];
+                read(fd, message, 100);
+
+                // {STATE};{STATE};{STATE};{STATE}
+                sscanf(message, "%d;%d;%d;%d", &new_heater_states[0], &new_heater_states[1], &new_heater_states[2], &new_heater_states[3]);
+                printf("TSL received: %d %d %d %d\n", new_heater_states[0], new_heater_states[1], new_heater_states[2], new_heater_states[3]);
+            }
+        }
+    }
+    pthread_exit((void*)-1);
+}
+
+void write_temp_info_pipe(char* message) {
+    write(fd_temp_info_pipe, message, strlen(message) + 1);
+}
 
 int main() {
 
@@ -133,6 +136,8 @@ int main() {
         perror("ERROR OPENING CONSOLE NAMED PIPE");
         exit(0);
     }
+
+    
     // printf("TSL opened response_pipe\n");
 
     // sleep(10);
@@ -155,20 +160,29 @@ int main() {
     struct TSL_data tsl;
     TSL_init(&tsl);
 
-    // Auxiliar for Now
-    int temp_result = 0;
     int error_array[2] = {0,0};
 
     // Possible Errors
     // [0] -> ????
     // [1] -> temperature error
 
+    int new_heater_states[4] = {0,0,0,0};
+
+    pthread_t thread;
+    ThreadArgs thread_args = {fd_response_pipe, new_heater_states};
+
+
+    if (pthread_create(&thread, NULL, read_response_thread, &thread_args) != 0) {
+        perror("Failed to create thread");
+        return 1;
+    }
+
     while(1){
-        usleep(200 * 1000);
-        
+        sleep(2);
+
+        // Verify Periods
         verify_periods(&tsl);
 
-        // something to get the data from pive
         // setHeaterState
         
         // Modify Temperatures
@@ -178,11 +192,26 @@ int main() {
                 error_array[1] += 1;  
             }
         } 
+        char message[100];
+        //{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE}
+        sprintf(message, "%f-%d;%f-%d;%f-%d;%f-%d", 
+                    pair_array[0].thermistor, pair_array[0].heater, 
+                    pair_array[1].thermistor, pair_array[1].heater, 
+                    pair_array[2].thermistor, pair_array[2].heater, 
+                    pair_array[3].thermistor, pair_array[3].heater);
+
+        write_temp_info_pipe(message);
 
         // write_csv
         
-        tsl.period++;
-        printf("%d",tsl.period);
+        tsl.clock++;
+        printf("TSL period: %d\n", tsl.clock);
+    }
+
+    void *status;
+    if (pthread_join(thread, &status) != 0) {
+        perror("Failed to join thread");
+        return 1;
     }
 
     close(fd_temp_info_pipe);    

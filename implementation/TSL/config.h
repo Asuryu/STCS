@@ -22,12 +22,26 @@
 #define TEMP_INFO_PIPE "temp_info_pipe"
 #define RESPONSE_PIPE "response_pipe"
 
-struct temperature_info {
-    th_ht pair;
-    int16_t timestamp;
-};
+typedef enum {false, true} bool;
 
-struct th_ht {
-    int thermistor;
-    bool state;
-};
+
+typedef struct ThermalPair {
+    bool heater;
+    double thermistor;
+} ThermalPair;
+
+typedef struct TSL_data {
+    int16_t clock;
+    int period;     //period being analyzed
+} TSL_data;
+
+typedef struct {
+    int fd;
+    int *new_heater_states;
+} ThreadArgs;
+
+void TSL_init(struct TSL_data *tsl);
+void verify_periods(struct TSL_data *tsl);
+int setHeaterState(struct ThermalPair TP_block);
+int modify_temperatures(struct ThermalPair* TP_block, int state);
+int write_csv(struct ThermalPair TP_block);

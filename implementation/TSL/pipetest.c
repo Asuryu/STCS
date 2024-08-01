@@ -33,11 +33,13 @@ int main() {
         if (select(fd_temp_info_pipe+1,&read_set,NULL,NULL,NULL)>0){
             if(FD_ISSET(fd_temp_info_pipe,&read_set)){
                 char message[100];
-                read(fd_temp_info_pipe, message, 100);
+                read(fd_temp_info_pipe, message, sizeof(message));
                 printf("TSL received: %s\n", message);
-                break;
+                write(fd_response_pipe, "TSL sended", strlen("TSL received") + 1);
             }
         }   
+
+
     }
 
     close(fd_temp_info_pipe);    
