@@ -303,7 +303,7 @@ function App() {
                     x1={area.x1}
                     x2={area.x2}
                     strokeOpacity={0.3}
-                    fill="red"
+                    fill="blue"
                   />
                 ))}
               </LineChart>
