@@ -15,13 +15,10 @@
 
 float temps[HISTORY_SIZE][N_HEATERS];
 unsigned int enabled;
-<<<<<<< HEAD
 
-//test function to be deleted
-=======
 float set_point;
 
->>>>>>> eb30157020f26c8bba082162a8a9ecc650bef77e
+//test function to be deleted
 void *controlTemp(void* pdata){
     while (enabled)
     {
@@ -120,6 +117,7 @@ void disableTCF(pthread_t *pidThread) {
 void setSetPoint(float setPoint) {
    set_point = setPoint >= -20 && setPoint <= 20 ? setPoint : set_point;
 }
+
 int main(int argc, char **argv) {
     setbuf(stdout, NULL); 
    
