@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
+CFLAGS = -Wall -Wextra -pedantic -std=c99 -pthread
 TARGET = prog
 TARGET2 = pipetest
 SRC = main.c

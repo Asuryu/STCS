@@ -38,7 +38,8 @@ int main() {
 
                 // write random combination following the pattern {STATE};{STATE};{STATE};{STATE}
                 char response[100];
-                sprintf(response, "%d;%d;%d;%d", rand() % 3 + 1, rand() % 3 + 1, rand() % 3 + 1, rand() % 3 + 1);
+                // random binary number
+                sprintf(response, "%d;%d;%d;%d", rand() % 2, rand() % 2, rand() % 2, rand() % 2);
                 write(fd_response_pipe, response, strlen(response) + 1);
                 printf("TSL sent: %s\n", response);
 

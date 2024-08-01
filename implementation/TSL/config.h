@@ -7,16 +7,11 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
-#include <sys/mman.h>
 #include <sys/fcntl.h>
-#include <sys/shm.h>
-#include <sys/ipc.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <pthread.h>
 #include <time.h>
-#include <semaphore.h>
-#include <sys/msg.h>
 #include <sys/select.h>
 
 // Define response informations for pipe
@@ -44,6 +39,9 @@ typedef struct {
     int fd;
     int *new_heater_states;
 } ThreadArgs;
+
+struct sigaction sigint_action;
+struct sigaction sigtstp_action;
 
 // Inicialize all the functions
 void TSL_init(struct TSL_data *tsl);

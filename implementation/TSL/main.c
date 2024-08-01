@@ -1,6 +1,13 @@
 
+
 #include "config.h"
 
+struct sigaction sa;
+volatile sig_atomic_t sigint_received = 0;
+pthread_t thread;
+
+// Functions and variables for Pipe
+int fd_temp_info_pipe, fd_response_pipe;
 
 // Function to initialize clock and period
 void TSL_init(struct TSL_data *tsl){
@@ -8,12 +15,35 @@ void TSL_init(struct TSL_data *tsl){
     tsl->period = NORMAL;
 }
 
+// Signal handler for SIGINT
+void sigint_handler() {
+    printf("SIGINT received\n");
+    sigint_received = 1;
+}
+
+int cleanup() {
+
+    pthread_join(thread, NULL);
+    while (wait(NULL) != -1){
+        continue;
+    }
+    close(fd_temp_info_pipe);
+    close(fd_response_pipe);
+
+    return 0;
+}
+
+void handle_error(char *error) {
+    perror(error);
+    cleanup();
+    exit(0);
+}
+
 
 
 // Function verify the clock period and define the state
 void verify_periods(struct TSL_data *tsl) {
     int8_t lowerBits = tsl->clock & 0x00FF;
-    printf("lowerBits: %d\n", lowerBits);
  
     if (lowerBits <= 0x1F || (lowerBits >= 0x60 && lowerBits <= 0xFF)) {
         printf("NORMAL\n");
@@ -26,6 +56,8 @@ void verify_periods(struct TSL_data *tsl) {
         tsl->period = SUN_EXPOSURE;
     }
 }
+
+
 
 
 // Function to turn ON/OFF each Heater
@@ -74,10 +106,18 @@ int modify_temperatures(struct ThermalPair* TP_block, int state){
 }
 
 
-// Functions and variables for Pipe
-int fd_temp_info_pipe, fd_response_pipe;
 
 void* read_response_thread(void* args) {
+
+    struct sigaction sigint_action;
+	sigint_action.sa_handler = sigint_handler;
+	sigemptyset(&sigint_action.sa_mask);
+	sigint_action.sa_flags = 0;
+	if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
+		handle_error("sigaction");
+		exit(EXIT_FAILURE);
+	}
+
     ThreadArgs *thread_args = (ThreadArgs*)args;
     int fd = thread_args->fd;
     int *new_heater_states = thread_args->new_heater_states;
@@ -87,7 +127,7 @@ void* read_response_thread(void* args) {
     FD_SET(fd, &read_set);
 
     printf("TSL waiting for response\n");
-    while(1){
+    while(!sigint_received) {
         if (select(fd + 1, &read_set, NULL, NULL, NULL) > 0) {
             if (FD_ISSET(fd, &read_set)) {
                 char message[100];
@@ -99,7 +139,8 @@ void* read_response_thread(void* args) {
             }
         }
     }
-    pthread_exit((void*)-1);
+    close(fd);
+    return NULL;
 }
 
 void write_temp_info_pipe(char* message) {
@@ -108,13 +149,22 @@ void write_temp_info_pipe(char* message) {
 
 int main() {
 
+    struct sigaction sigint_action;
+	sigint_action.sa_handler = sigint_handler;
+	sigemptyset(&sigint_action.sa_mask);
+	sigint_action.sa_flags = 0;
+	if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
+		handle_error("sigaction");
+		exit(EXIT_FAILURE);
+	}
+
     // printf("TSL started\n");
 
     if((mkfifo(TEMP_INFO_PIPE,O_CREAT|O_EXCL|0600)<0) 
             && (errno != EEXIST)){
 		
         char *error_msg = "ERROR CREATING TEMP INFO NAMED PIPE";
-        perror(error_msg); 
+        handle_error(error_msg); 
         //write_csv_errors(error_msg);
 		exit(0);
 	}
@@ -125,7 +175,7 @@ int main() {
             && (errno != EEXIST)){
         
         char *error_msg = "ERROR CREATING RESPONSE NAMED PIPE";
-        perror(error_msg); 
+        handle_error(error_msg); 
         //write_csv_errors(error_msg);
 		exit(0);
     }
@@ -135,7 +185,7 @@ int main() {
     if ((fd_temp_info_pipe = open(TEMP_INFO_PIPE, O_RDWR)) < 0) {
         
         char *error_msg = "ERROR OPENING SENSOR NAMED PIPE";
-        perror(error_msg); 
+        handle_error(error_msg); 
         //write_csv_errors(error_msg);
         exit(0);
     }
@@ -144,22 +194,10 @@ int main() {
     if ((fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0) {
         
         char *error_msg = "ERROR OPENING CONSOLE NAMED PIPE";
-        perror(error_msg); 
+        handle_error(error_msg); 
         //write_csv_errors(error_msg);
         exit(0);
     }
-
-    
-    // printf("TSL opened response_pipe\n");
-
-    // sleep(10);
-
-
-    // char message[100];
-    // sprintf(message, "TSL: %d", clock);
-    // printf("TSL sending: %s\n", message);
-    // write(fd_temp_info_pipe, message, strlen(message)+1);
-
 
     // Initialize the Heaters Sstate and the Thermistors temperature
     struct ThermalPair pair_array[4] = {
@@ -181,12 +219,12 @@ int main() {
 
 
     if (pthread_create(&thread, NULL, read_response_thread, &thread_args) != 0) {
-        perror("Failed to create thread");
+        handle_error("Failed to create thread");
         return 1;
     }
 
-    while(1){
-        sleep(2);
+    while(!sigint_received){
+        usleep(200 * 1000); // 200ms
 
         // Verify Periods
         verify_periods(&tsl);
@@ -225,17 +263,11 @@ int main() {
         printf("TSL period: %d\n", tsl.clock);
     }
 
-    void *status;
-    if (pthread_join(thread, &status) != 0) {
-        perror("Failed to join thread");
-        return 1;
+    if (cleanup() <0 ) {
+        handle_error("Failed to cleanup");
+        return -1;
     }
 
-    close(fd_temp_info_pipe);    
-    close(fd_response_pipe);
-
-    unlink(TEMP_INFO_PIPE);
-	unlink(RESPONSE_PIPE);
 
     return 0;
 }   
