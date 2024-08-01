@@ -19,15 +19,33 @@
 #include <sys/msg.h>
 #include <sys/select.h>
 
+// Define response informations for pipe
 #define TEMP_INFO_PIPE "temp_info_pipe"
 #define RESPONSE_PIPE "response_pipe"
 
-struct temperature_info {
-    th_ht pair;
-    int16_t timestamp;
+// Define states and Bool Type
+#define NORMAL 1
+#define ECLIPSE 2
+#define SUN_EXPOSURE 3
+
+typedef enum {false, true} bool;
+
+// Define Structcs
+struct ThermalPair {
+    bool heater;
+    double thermistor;
 };
 
-struct th_ht {
-    int thermistor;
-    bool state;
+struct TSL_data{
+    uint16_t clock;
+    int period;     //period being analyzed
 };
+
+
+// Inicialize all the functions
+void TSL_init(struct TSL_data *tsl);
+void verify_periods(struct TSL_data *tsl);
+void setHeaterState(struct ThermalPair* TP_block, char *heater_state);
+int modify_temperatures(struct ThermalPair* TP_block, int state);
+void write_csv_correct(struct ThermalPair TP_block);
+void write_csv_errors(char *error);

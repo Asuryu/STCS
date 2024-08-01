@@ -9,34 +9,6 @@
 #include "config.h"
 
 
-// Define states and Bool Type
-#define NORMAL 1
-#define ECLIPSE 2
-#define SUN_EXPOSURE 3
-
-typedef enum {false, true} bool;
-
-
-// Define Structcs
-struct ThermalPair {
-    bool heater;
-    double thermistor;
-};
-
-struct TSL_data{
-    uint16_t clock;
-    int period;     //period being analyzed
-};
-
-
-// Inicialize all the functions
-void TSL_init(struct TSL_data *tsl);
-void verify_periods(struct TSL_data *tsl);
-int setHeaterState(struct ThermalPair TP_block);
-int modify_temperatures(struct ThermalPair* TP_block, int state);
-int write_csv(struct ThermalPair TP_block);
-
-
 // Function to initialize clock and period
 void TSL_init(struct TSL_data *tsl){
     tsl->clock = 0;
@@ -55,6 +27,15 @@ void verify_periods(struct TSL_data *tsl) {
     } else if (lowerBits >= 0x40 && lowerBits <= 0x5F) {
         tsl->period = SUN_EXPOSURE;
     }
+}
+
+
+// Function to turn ON/OFF each Heater
+void setHeaterState(struct ThermalPair *TP_block, char *heater_state){
+    TP_block[0].heater = heater_state[0];
+    TP_block[1].heater = heater_state[1];
+    TP_block[2].heater = heater_state[2];
+    TP_block[3].heater = heater_state[3];   
 }
 
 
@@ -106,7 +87,9 @@ int main() {
     if((mkfifo(TEMP_INFO_PIPE,O_CREAT|O_EXCL|0600)<0) 
             && (errno != EEXIST)){
 		
-        perror("ERROR CREATING TEMP INFO NAMED PIPE"); 
+        char *error_msg = "ERROR CREATING TEMP INFO NAMED PIPE";
+        perror(error_msg); 
+        write_csv_errors(error_msg);
 		exit(0);
 	}
 
@@ -114,8 +97,10 @@ int main() {
 
     if((mkfifo(RESPONSE_PIPE,O_CREAT|O_EXCL|0600)<0) 
             && (errno != EEXIST)){
-
-		perror("ERROR CREATING RESPONSE NAMED PIPE"); 
+        
+        char *error_msg = "ERROR CREATING RESPONSE NAMED PIPE";
+        perror(error_msg); 
+        write_csv_errors(error_msg);
 		exit(0);
     }
 
@@ -123,14 +108,18 @@ int main() {
 
     if ((fd_temp_info_pipe = open(TEMP_INFO_PIPE, O_RDWR)) < 0) {
         
-        perror("ERROR OPENING SENSOR NAMED PIPE");
+        char *error_msg = "ERROR OPENING SENSOR NAMED PIPE";
+        perror(error_msg); 
+        write_csv_errors(error_msg);
         exit(0);
     }
     // printf("TSL opened temp_info_pipe\n");
 
     if ((fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0) {
         
-        perror("ERROR OPENING CONSOLE NAMED PIPE");
+        char *error_msg = "ERROR OPENING CONSOLE NAMED PIPE";
+        perror(error_msg); 
+        write_csv_errors(error_msg);
         exit(0);
     }
     // printf("TSL opened response_pipe\n");
@@ -156,26 +145,21 @@ int main() {
     TSL_init(&tsl);
 
     // Auxiliar for Now
-    int temp_result = 0;
-    int error_array[2] = {0,0};
-
-    // Possible Errors
-    // [0] -> ????
-    // [1] -> temperature error
+    char heaters_state[4] = {0,0,1,1};
+    
 
     while(1){
         usleep(200 * 1000);
         
         verify_periods(&tsl);
 
-        // something to get the data from pive
-        // setHeaterState
+        // something to get the data from pipe
+
+        setHeaterState(pair_array, heaters_state);
         
-        // Modify Temperatures
         for(int i=0; i<4; i++){
             if(modify_temperatures(&pair_array[i], tsl.period) == -1){
-                printf("setTemperature ERROR: Unknown state\n");  
-                error_array[1] += 1;  
+                write_csv_errors("setTemperature ERROR: Unknown state");
             }
         } 
 
