@@ -10,7 +10,7 @@ import {
   ReferenceArea,
 } from "recharts";
 import "./App.css";
-import Toast from './error_log.tsx';
+import Toast from './error_log';
 
 interface DataPoint {
   THERM_01: number;
@@ -27,7 +27,7 @@ interface DataPoint {
 
 const App: React.FC = () => {
   const [displayData, setDisplayData] = useState<DataPoint[]>([]);
-  const [errorLogs, setErrorLogs] = useState<string[]>([]);
+  const [currentError, setCurrentError] = useState<string | null>(null);
   const incomingData = useRef<DataPoint[]>([]);
   const ws = useRef<WebSocket | null>(null);
 
@@ -53,14 +53,16 @@ const App: React.FC = () => {
           HTR_02: parsedData[5],
           HTR_03: parsedData[6],
           HTR_04: parsedData[7],
-          ERROR: parsedData[9],
+          ERROR: parsedData[10],
           TIMESTAMP: new Date(parsedData[8]).toISOString(), // Ensure TIMESTAMP is a valid ISO string
         };
         incomingData.current.push(newData);
 
-        // Check for errors and add to errorLogs
+        // Check for errors and update currentError
         if (newData.ERROR) {
-          setErrorLogs(prevLogs => [...prevLogs, `Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${newData.ERROR}`]);
+          setCurrentError(`Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${newData.ERROR}`);
+        } else {
+          setCurrentError(null);
         }
       } catch (error) {
         console.error("Error parsing message data:", error);
@@ -186,13 +188,12 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {errorLogs.map((log, index) => (
-            <Toast key={index} message={log} onClose={() => {
-              setErrorLogs((logs) => logs.filter((_, i) => i !== index));
-            }} />
-        ))}
+        {currentError && (
+            <Toast message={currentError} onClose={() => setCurrentError(null)} />
+        )}
       </>
   );
 };
 
 export default App;
+
