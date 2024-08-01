@@ -194,7 +194,8 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {currentError && (
+        {/* Conditional Toast Rendering */}
+        {!isSidePanelVisible && currentError && (
             <Toast
                 message={currentError}
                 onClose={() => setCurrentError(null)}
