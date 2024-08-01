@@ -15,12 +15,10 @@ int PID(int goal_temperature, int freq, int *current_temperature, int *state) {
         goal_temperature_array[i] = goal_temperature;
     }
 
-    for(int i = 2; i < temperature_size; i++) {
         error[i] = goal_temperature_array[i] - current_temperature[i];
         state[i] = state[i - 1] + error[i] * (Kp + Ki * freq / 2 + 2 * Kd / freq) +
                     error[i - 1] * (-Kp + Ki * freq / 2 - 4 * Kd / freq) +
                     error[i - 2] * Kd / freq;
-    }
 
     return state[temperature_size - 1];
 }
