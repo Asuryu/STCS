@@ -10,7 +10,7 @@ import {
   ReferenceArea,
 } from "recharts";
 import "./App.css";
-import Toast from './error_log';
+import Toast from './error_log'; // Ensure the path is correct
 
 interface DataPoint {
   THERM_01: number;
@@ -27,6 +27,8 @@ interface DataPoint {
 
 const App: React.FC = () => {
   const [displayData, setDisplayData] = useState<DataPoint[]>([]);
+  const [errorLogs, setErrorLogs] = useState<string[]>([]);
+  const [isSidePanelVisible, setIsSidePanelVisible] = useState<boolean>(false);
   const [currentError, setCurrentError] = useState<string | null>(null);
   const incomingData = useRef<DataPoint[]>([]);
   const ws = useRef<WebSocket | null>(null);
@@ -58,9 +60,13 @@ const App: React.FC = () => {
         };
         incomingData.current.push(newData);
 
-        // Check for errors and update currentError
+        // Check for errors and update currentError and errorLogs
         if (newData.ERROR) {
           setCurrentError(`Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${newData.ERROR}`);
+          setErrorLogs((prevLogs) => [
+            ...prevLogs,
+            `Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${newData.ERROR}`
+          ]);
         } else {
           setCurrentError(null);
         }
@@ -189,11 +195,34 @@ const App: React.FC = () => {
         </div>
 
         {currentError && (
-            <Toast message={currentError} onClose={() => setCurrentError(null)} />
+            <Toast
+                message={currentError}
+                onClose={() => setCurrentError(null)}
+                onClick={() => setIsSidePanelVisible(true)} // Show side panel on click
+            />
+        )}
+
+        {/* Side Panel */}
+        {isSidePanelVisible && (
+            <div className="fixed top-0 right-0 h-full w-80 bg-gray-800 text-white p-4 shadow-lg z-40 overflow-y-auto">
+              <h2 className="text-lg font-semibold mb-4">Error Log</h2>
+              <button
+                  className="mb-4 bg-red-600 text-white px-4 py-2 rounded"
+                  onClick={() => setIsSidePanelVisible(false)}
+              >
+                Close
+              </button>
+              <ul className="space-y-2">
+                {errorLogs.slice().reverse().map((log, index) => (
+                    <li key={index} className="border-b border-gray-600 pb-2">
+                      {log}
+                    </li>
+                ))}
+              </ul>
+            </div>
         )}
       </>
   );
 };
 
 export default App;
-

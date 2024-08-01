@@ -3,9 +3,10 @@ import React, { useEffect } from 'react';
 interface ToastProps {
     message: string;
     onClose: () => void;
+    onClick?: () => void; // Optional onClick handler
 }
 
-const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
+const Toast: React.FC<ToastProps> = ({ message, onClose, onClick }) => {
     useEffect(() => {
         const timer = setTimeout(() => {
             onClose();
@@ -15,10 +16,11 @@ const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
     }, [onClose]);
 
     return (
-        <div className="fixed top-4 right-4 z-50">
-            <div className="bg-red-600 text-white p-4 border-2 border-red-800 rounded-lg shadow-lg max-w-xs">
-                <span>{message}</span>
-            </div>
+        <div
+            className="fixed top-4 right-4 z-50 bg-red-600 text-white p-4 border-2 border-red-800 rounded-lg shadow-lg max-w-xs cursor-pointer"
+            onClick={onClick} // Trigger onClick when clicked
+        >
+            <span>{message}</span>
         </div>
     );
 };
