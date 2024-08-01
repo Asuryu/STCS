@@ -10,6 +10,7 @@ import {
   ReferenceArea,
 } from "recharts";
 import "./App.css";
+import Toast from './error_log.tsx';
 
 interface DataPoint {
   THERM_01: number;
@@ -20,11 +21,13 @@ interface DataPoint {
   HTR_02: string;
   HTR_03: string;
   HTR_04: string;
+  ERROR: string;
   TIMESTAMP: string;
 }
 
 const App: React.FC = () => {
   const [displayData, setDisplayData] = useState<DataPoint[]>([]);
+  const [errorLogs, setErrorLogs] = useState<string[]>([]);
   const incomingData = useRef<DataPoint[]>([]);
   const ws = useRef<WebSocket | null>(null);
 
@@ -50,9 +53,15 @@ const App: React.FC = () => {
           HTR_02: parsedData[5],
           HTR_03: parsedData[6],
           HTR_04: parsedData[7],
+          ERROR: parsedData[9],
           TIMESTAMP: new Date(parsedData[8]).toISOString(), // Ensure TIMESTAMP is a valid ISO string
         };
         incomingData.current.push(newData);
+
+        // Check for errors and add to errorLogs
+        if (newData.ERROR) {
+          setErrorLogs(prevLogs => [...prevLogs, `Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${newData.ERROR}`]);
+        }
       } catch (error) {
         console.error("Error parsing message data:", error);
       }
@@ -86,10 +95,10 @@ const App: React.FC = () => {
       setDisplayData((prevDisplayData) => {
         const newDisplayData = [
           ...prevDisplayData.filter(
-            (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
+              (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
           ),
           ...incomingData.current.filter(
-            (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
+              (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
           ),
         ];
         console.log("Display data updated:", newDisplayData);
@@ -119,10 +128,10 @@ const App: React.FC = () => {
   };
 
   const renderCustomLegend = () => (
-    <div className="custom-legend">
-      <span style={{ color: "#8884d8" }}>Temperature</span>
-      <span style={{ color: "rgba(255, 0, 0, 0.3)" }}> Heater On</span>
-    </div>
+      <div className="custom-legend">
+        <span style={{ color: "#8884d8" }}>Temperature</span>
+        <span style={{ color: "rgba(255, 0, 0, 0.3)" }}> Heater On</span>
+      </div>
   );
 
   const thermKeys: (keyof DataPoint)[] = [
@@ -139,44 +148,50 @@ const App: React.FC = () => {
   ];
 
   return (
-    <>
-      <h1>Temperature Data Charts</h1>
-      <div className="chart-wrapper">
-        <div className="chart-container">
-          {thermKeys.map((thermKey, index) => (
-            <div key={thermKey} className="chart-item">
-              <h2>{thermKey}</h2>
-              <LineChart width={400} height={300} data={displayData}>
-                <Line type="monotone" dataKey={thermKey} stroke="#8884d8" />
-                <CartesianGrid stroke="#ccc" />
-                <XAxis
-                  dataKey="TIMESTAMP"
-                  tickFormatter={(tick) => new Date(tick).toLocaleTimeString()}
-                />
-                <YAxis />
-                <Tooltip
-                  labelFormatter={(label) =>
-                    new Date(label).toLocaleTimeString()
-                  }
-                />
-                <Legend content={renderCustomLegend} />
-                {getReferenceAreas(displayData, heaterKeys[index]).map(
-                  (area, i) => (
-                    <ReferenceArea
-                      key={i}
-                      x1={area.x1}
-                      x2={area.x2}
-                      strokeOpacity={0.3}
-                      fill="red"
+      <>
+        <h1>Temperature Data Charts</h1>
+        <div className="chart-wrapper">
+          <div className="chart-container">
+            {thermKeys.map((thermKey, index) => (
+                <div key={thermKey} className="chart-item">
+                  <h2>{thermKey}</h2>
+                  <LineChart width={400} height={300} data={displayData}>
+                    <Line type="monotone" dataKey={thermKey} stroke="#8884d8" />
+                    <CartesianGrid stroke="#ccc" />
+                    <XAxis
+                        dataKey="TIMESTAMP"
+                        tickFormatter={(tick) => new Date(tick).toLocaleTimeString()}
                     />
-                  )
-                )}
-              </LineChart>
-            </div>
-          ))}
+                    <YAxis />
+                    <Tooltip
+                        labelFormatter={(label) =>
+                            new Date(label).toLocaleTimeString()
+                        }
+                    />
+                    <Legend content={renderCustomLegend} />
+                    {getReferenceAreas(displayData, heaterKeys[index]).map(
+                        (area, i) => (
+                            <ReferenceArea
+                                key={i}
+                                x1={area.x1}
+                                x2={area.x2}
+                                strokeOpacity={0.3}
+                                fill="red"
+                            />
+                        )
+                    )}
+                  </LineChart>
+                </div>
+            ))}
+          </div>
         </div>
-      </div>
-    </>
+
+        {errorLogs.map((log, index) => (
+            <Toast key={index} message={log} onClose={() => {
+              setErrorLogs((logs) => logs.filter((_, i) => i !== index));
+            }} />
+        ))}
+      </>
   );
 };
 
