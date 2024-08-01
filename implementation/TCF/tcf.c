@@ -15,8 +15,13 @@
 
 float temps[HISTORY_SIZE][N_HEATERS];
 unsigned int enabled;
+<<<<<<< HEAD
 
 //test function to be deleted
+=======
+float set_point;
+
+>>>>>>> eb30157020f26c8bba082162a8a9ecc650bef77e
 void *controlTemp(void* pdata){
     while (enabled)
     {
@@ -107,8 +112,14 @@ int enableTCF(pthread_t *pidThread) {
     return pthread_create(pidThread,NULL, &controlTemp, NULL) != 0 ? -1 : 0;
 }
 
+void disableTCF(pthread_t *pidThread) {
+    enabled = 0;
+    pthread_join(*pidThread,NULL);
+}
 
-
+void setSetPoint(float setPoint) {
+   set_point = setPoint >= -20 && setPoint <= 20 ? setPoint : set_point;
+}
 int main(int argc, char **argv) {
     setbuf(stdout, NULL); 
    
@@ -124,10 +135,8 @@ int main(int argc, char **argv) {
     //for testing only!
     printf("Press enter to end ");
     getchar();
-    enabled = 0;
-    //- - - - - - - - -
-    
-    //wait for thread to end to finish exec
-    pthread_join(pidThread,NULL);
+
+    disableTCF(&pidThread);
+
     return 0;
 }
