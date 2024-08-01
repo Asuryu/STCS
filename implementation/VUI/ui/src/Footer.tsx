@@ -4,28 +4,40 @@ import { WiHot } from "react-icons/wi";
 import { WiMoonAltWaxingCrescent1 } from "react-icons/wi";
 import Dashboard from './Dashboard';
 
-// Function to get the appropriate status icon based on the status
-const getStatusIcon = (status) => {
-  switch (status) {
-    case 'on':
-      return <RiEmotionNormalFill className="text-yellow-500 text-7xl" />;
-    case 'off':
-      return <WiHot className="text-red-500 text-7xl" />;
-    default:
-      return <WiMoonAltWaxingCrescent1 className="text-white text-7xl" />;
-  }
-};
+interface LastData {
+  THERM_01: number;
+  THERM_02: number;
+  THERM_03: number;
+  THERM_04: number;
+  HTR_01: string;
+  HTR_02: string;
+  HTR_03: string;
+  HTR_04: string;
+  TIMESTAMP: string;
+  ENVIRONMENT?: string;
+}
 
-// Footer component
-const Footer = ({ status }) => {
+const Footer = ({ LastData: LastData}) => {
+  const getStatusIcon = (LastData: LastData) => {
+    if (LastData) {
+      switch (LastData.ENVIRONMENT) {
+        case 'Sun Exposure':
+          return <WiHot className="text-red-500 text-7xl" />;
+        case 'Eclipse':
+          return <WiMoonAltWaxingCrescent1 className="text-white text-7xl" />;
+        default:
+          return <RiEmotionNormalFill className="text-yellow-500 text-7xl" />;
+      }
+    }
+  };
+
   return (
-    <footer className="bg-gray-800 text-white p-4 fixed bottom-0 left-0 w-full">
+    <footer className="bg-gray-800 text-white p-4 absolute bottom-0 left-0 w-full mt-20 mx-0">
       <div className="container mx-auto flex flex-row justify-center items-center">
-        <Dashboard />
+        <Dashboard LastData={LastData} />
         <div className="flex flex-col items-center text-xl">
           <span>Environment:</span>
-          {getStatusIcon("on")}
-          <span>{status}</span>
+          {getStatusIcon(LastData)}
         </div>
       </div>
     </footer>

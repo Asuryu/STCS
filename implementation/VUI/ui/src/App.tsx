@@ -10,8 +10,7 @@ import {
   ReferenceArea,
 } from "recharts";
 import "./App.css";
-import Footer from './Footer'
-import Dashboard from './Dashboard'
+import Footer from "./Footer";
 
 interface DataPoint {
   THERM_01: number;
@@ -23,10 +22,12 @@ interface DataPoint {
   HTR_03: string;
   HTR_04: string;
   TIMESTAMP: string;
+  ENVIRONMENT: string;
 }
 
 const App: React.FC = () => {
   const [displayData, setDisplayData] = useState<DataPoint[]>([]);
+  const [LastData, setLastData] = useState<DataPoint | null>(null);
   const incomingData = useRef<DataPoint[]>([]);
   const ws = useRef<WebSocket | null>(null);
 
@@ -53,8 +54,10 @@ const App: React.FC = () => {
           HTR_03: parsedData[6],
           HTR_04: parsedData[7],
           TIMESTAMP: new Date(parsedData[8]).toISOString(), // Ensure TIMESTAMP is a valid ISO string
+          ENVIRONMENT: parsedData[9],
         };
         incomingData.current.push(newData);
+        setLastData(newData)
       } catch (error) {
         console.error("Error parsing message data:", error);
       }
@@ -140,22 +143,24 @@ const App: React.FC = () => {
     "HTR_04",
   ];
 
-  const status = "on"
-  
+  const status = "on";
+
   return (
     <>
-      <h1>Temperature Data Charts</h1>
-      <div className="chart-wrapper">
+      <h1 className="mb-10">Temperature Data Charts</h1>
+      <div className="chart-wrapper mb-40">
         <div className="chart-container">
           {thermKeys.map((thermKey, index) => (
             <div key={thermKey} className="chart-item">
               <h2>{thermKey}</h2>
-              <LineChart width={400} height={300} data={displayData}>
+              <LineChart width={300} height={300} data={displayData}>
                 <Line type="monotone" dataKey={thermKey} stroke="#8884d8" />
                 <CartesianGrid stroke="#ccc" />
                 <XAxis
                   dataKey="TIMESTAMP"
-                  tickFormatter={(tick) => new Date(tick).toLocaleTimeString()}
+                  tickFormatter={(tick) =>
+                    new Date(tick).toLocaleTimeString()
+                  }
                 />
                 <YAxis />
                 <Tooltip
@@ -180,7 +185,7 @@ const App: React.FC = () => {
           ))}
         </div>
       </div>
-      <Footer status={status} />
+      <Footer LastData={LastData} />
     </>
   );
 };
