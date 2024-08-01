@@ -47,5 +47,5 @@ void TSL_init(struct TSL_data *tsl);
 void verify_periods(struct TSL_data *tsl);
 void setHeaterState(struct ThermalPair* TP_block, char *heater_state);
 int modify_temperatures(struct ThermalPair* TP_block, int state);
-void write_csv_correct(struct ThermalPair* TP_block, char *timestamp, int state);
+void write_csv_correct(const struct ThermalPair TP_block, char *timestamp, int state);
 void write_csv_errors(char *error);
