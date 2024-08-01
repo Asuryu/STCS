@@ -19,6 +19,7 @@ void *controlTemp(void* pdata){
     while (enabled)
     {
         printf(".");
+        fflush(stdout);
         sleep(1);
     }
     return 0;
@@ -38,7 +39,7 @@ int main(int argc, char **argv) {
     
     if(enableTCF(&pidThread) == -1) return -1; 
 
-    printf("\nPress enter to end ");
+    printf("Press enter to end ");
     getchar();
     enabled = 0;
     
