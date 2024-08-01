@@ -1,33 +1,37 @@
 #include "PID.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 
-int PID(int goal_temperature, int freq, int *current_temperature, int *state) {
-    int temperature_size = sizeof(current_temperature) / sizeof(current_temperature[0]);
+int PID(int goal_temperature, int freq, int *current_temperature, int *state, int temperature_size) {
     float *error = (float *)malloc(temperature_size * sizeof(float));
-
-    int final_state;
-
-    float Kp = 3.0; 
-    float Ki = 0.005; 
-    float Kd = 0;
-    //float Kd = 0.05;
-
-    printf("Data:\nFreq: %d \t Kp: %f ; Ki: %f ; Kd: %f\nErrors: ", freq, Kp, Ki, Kd );
-
-    for(int i = 0; i < temperature_size; i++) {
-        error[i] = goal_temperature - current_temperature[i];
-        printf("%f \t", error[i]);
+    if (error == NULL) {
+        fprintf(stderr, "Error allocating memory\n");
+        return -1;
     }
-    
-    printf("\n\n[1] %f\n[2] %f\n[3] %f\n" , state[0] + error[2] * (Kp + Ki * freq / 2 + 2 * Kd / freq),  error[1] * (Ki * freq - 4 * Kd / freq), error[0] * (Kd * 2 / freq + Ki * freq / 2 - Kp));
 
-    final_state = state[sizeof(current_temperature) / sizeof(current_temperature[0])-2] + error[2] * (Kp + Ki * (freq / 2) + 2 * (Kd / freq)) 
-                    + error[1] * (Ki * freq - 4 * (Kd / freq))
-                    + error[0] * (Kd * (2 / freq) + Ki * (freq / 2) - Kp);
-    
-     free(error);
+    float Kp = 3.0;
+    float Ki = 0.005;
+    float Kd = 0.0;
 
+    for (int i = 0; i < temperature_size; i++) {
+        error[i] = goal_temperature - current_temperature[i];
+    }
+
+    float proportional = Kp * error[temperature_size - 1];
+    float integral = 0.0;
+    for (int i = 0; i < temperature_size; i++) {
+        integral += error[i];
+    }
+    integral *= Ki / freq;
+
+    float derivative = 0.0;
+    if (temperature_size > 1) {
+        derivative = Kd * (error[temperature_size - 1] - error[temperature_size - 2]) * freq;
+    }
+    float control_signal = proportional + integral + derivative;
+
+    int final_state = (control_signal > 0) ? 1 : -1;
+
+    free(error);
     return final_state;
 }
