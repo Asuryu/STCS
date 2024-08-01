@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <time.h>
+#include <sys/time.h>
 #include "config.h"
 
 
@@ -20,7 +22,7 @@ void TSL_init(struct TSL_data *tsl){
 void verify_periods(struct TSL_data *tsl) {
     uint8_t lowerBits = tsl->clock & 0x00FF;
  
-    if (lowerBits >= 0x00 || lowerBits >= 0x60){
+    if (lowerBits <= 0x1F || lowerBits >= 0x60){
         tsl->period = NORMAL;
     } else if (lowerBits >= 0x20 && lowerBits <= 0x3F) {
         tsl->period = ECLIPSE;
@@ -77,10 +79,100 @@ int modify_temperatures(struct ThermalPair* TP_block, int state){
 }
 
 
+const char* get_timestamp() {
+    
+    time_t current_time = time(NULL);
+    struct tm *local_time = localtime(&current_time);
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    int milliseconds = tv.tv_usec / 1000; 
+
+    char time_string[100];
+    strftime(time_string, sizeof(time_string), "%Y-%m-%dT%H:%M:%S", local_time);
+
+    char final_string[120]; 
+    snprintf(final_string, sizeof(final_string), "%s.%03d", time_string, milliseconds);
+
+    return final_string;
+}
+
+
+int file_exists(const char *filename) {
+    return access(filename, F_OK) == 0;
+}
+ 
+ 
+// Build the data string
+char * buildData (struct ThermalPair* TP_block, char *timestamp, int state){
+ 
+     char buffer[512];
+ 
+    snprintf(buffer, sizeof(buffer), "%lf, %lf, %lf, %lf, %d, %d, %d, %d, %s, %d, null\n", TP_block[0].heater, TP_block[1].heater, 
+    TP_block[2].heater, TP_block[3].heater, TP_block[0].thermistor, TP_block[1].thermistor, TP_block[2].thermistor, TP_block[3].thermistor, timestamp, state);
+ 
+    printf("%s\n", buffer);
+   
+    return buffer;
+ 
+}
+ 
+// function to write in cvs (correct)
+void writeToCSVCorrect(const char *filename, const char *header, const char *data){
+ 
+    FILE *file;
+ 
+    int exists = file_exists(filename);
+    file = fopen(filename, "a");
+    if (file == NULL) {
+        perror("Erro ao abrir o arquivo");
+        exit(-1);
+    }
+    if (!exists) {
+        fprintf(file, "%s\n", header);
+    }
+ 
+    fprintf(file, "%s\n", data);
+ 
+    fclose(file);
+ 
+}
+ 
+// function to write in cvs (incorrect)
+void writeToCSVError(const char *filename, const char *header, char *error, char *timestamp){
+ 
+    FILE *file;
+ 
+    char buffer[512];
+   
+    snprintf(buffer, sizeof(buffer), "null, null, null, null, null, null, null, null, %s, null, %s\n", timestamp, error);
+ 
+ 
+    int exists = file_exists(filename);
+    file = fopen(filename, "a");
+    if (file == NULL) {
+        perror("Erro ao abrir o arquivo");
+        exit(-1);
+    }
+    if (!exists) {
+        fprintf(file, "%s\n", header);
+    }
+ 
+    fprintf(file, "%s\n", buffer);
+ 
+    fclose(file);
+ 
+}
+
+
 // Functions and variables for Pipe
 int fd_temp_info_pipe, fd_response_pipe;
 
 int main() {
+    
+    char *data;
+    const char *filename = "data.csv";
+    const char *header = "THERM-01, THERM-02, THERM-03, THERM-04, HTR-1, HTR-2, HTR-3, HTR-4, TIMESTAMP, ENVIRONMENT, ERROR";
 
     // printf("TSL started\n");
 
@@ -89,7 +181,7 @@ int main() {
 		
         char *error_msg = "ERROR CREATING TEMP INFO NAMED PIPE";
         perror(error_msg); 
-        write_csv_errors(error_msg);
+        write_csv_errors(filename, header, error_msg, get_timestamp());
 		exit(0);
 	}
 
@@ -100,7 +192,7 @@ int main() {
         
         char *error_msg = "ERROR CREATING RESPONSE NAMED PIPE";
         perror(error_msg); 
-        write_csv_errors(error_msg);
+        write_csv_errors(filename, header, error_msg, get_timestamp());
 		exit(0);
     }
 
@@ -110,7 +202,7 @@ int main() {
         
         char *error_msg = "ERROR OPENING SENSOR NAMED PIPE";
         perror(error_msg); 
-        write_csv_errors(error_msg);
+        write_csv_errors(filename, header, error_msg, get_timestamp());
         exit(0);
     }
     // printf("TSL opened temp_info_pipe\n");
@@ -119,7 +211,7 @@ int main() {
         
         char *error_msg = "ERROR OPENING CONSOLE NAMED PIPE";
         perror(error_msg); 
-        write_csv_errors(error_msg);
+        write_csv_errors(filename, header, error_msg, get_timestamp());
         exit(0);
     }
     // printf("TSL opened response_pipe\n");
@@ -144,6 +236,10 @@ int main() {
     struct TSL_data tsl;
     TSL_init(&tsl);
 
+    char *data;
+    const char *filename = "data.csv";
+    const char *header = "THERM-01, THERM-02, THERM-03, THERM-04, HTR-1, HTR-2, HTR-3, HTR-4, TIMESTAMP, ENVIRONMENT, ERROR";
+
     // Auxiliar for Now
     char heaters_state[4] = {0,0,1,1};
 
@@ -159,12 +255,13 @@ int main() {
         
         for(int i=0; i<4; i++){
             if(modify_temperatures(&pair_array[i], tsl.period) == -1){
-                write_csv_errors("setTemperature ERROR: Unknown state");
+                write_csv_errors(filename, header, "setTemperature ERROR: Unknown state", get_timestamp());
             }
         } 
 
-        // write_csv
-        
+        data = buildData(&pair_array, get_timestamp(), tsl.period); 
+        write_csv_correct(filename, header, data);
+
         tsl.period++;
         printf("%d",tsl.period);
     }
