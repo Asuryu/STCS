@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import "./App.css";
 import Footer from "./Footer";
+import Toast from './error_log'; // Ensure the path is correct
 
 interface DataPoint {
   THERM_01: number;
@@ -23,11 +24,15 @@ interface DataPoint {
   HTR_04: string;
   TIMESTAMP: string;
   ENVIRONMENT: string;
+  ERROR: string;
 }
 
 const App: React.FC = () => {
   const [displayData, setDisplayData] = useState<DataPoint[]>([]);
   const [LastData, setLastData] = useState<DataPoint | null>(null);
+  const [errorLogs, setErrorLogs] = useState<string[]>([]);
+  const [isSidePanelVisible, setIsSidePanelVisible] = useState<boolean>(false);
+  const [currentError, setCurrentError] = useState<string | null>(null);
   const incomingData = useRef<DataPoint[]>([]);
   const ws = useRef<WebSocket | null>(null);
 
@@ -53,11 +58,23 @@ const App: React.FC = () => {
           HTR_02: parsedData[5],
           HTR_03: parsedData[6],
           HTR_04: parsedData[7],
+          ERROR: parsedData[10],
           TIMESTAMP: new Date(parsedData[8]).toISOString(), // Ensure TIMESTAMP is a valid ISO string
           ENVIRONMENT: parsedData[9],
         };
         incomingData.current.push(newData);
-        setLastData(newData)
+        setLastData(newData);
+
+        // Check for errors and update currentError and errorLogs
+        if (newData.ERROR) {
+          setCurrentError(`Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${newData.ERROR}`);
+          setErrorLogs((prevLogs) => [
+            ...prevLogs,
+            `Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${newData.ERROR}`
+          ]);
+        } else {
+          setCurrentError(null);
+        }
       } catch (error) {
         console.error("Error parsing message data:", error);
       }
@@ -91,10 +108,10 @@ const App: React.FC = () => {
       setDisplayData((prevDisplayData) => {
         const newDisplayData = [
           ...prevDisplayData.filter(
-            (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
+              (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
           ),
           ...incomingData.current.filter(
-            (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
+              (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
           ),
         ];
         console.log("Display data updated:", newDisplayData);
@@ -143,8 +160,6 @@ const App: React.FC = () => {
     "HTR_04",
   ];
 
-  const status = "on";
-
   return (
     <>
       <h1 className="mb-10">Temperature Data Charts</h1>
@@ -186,6 +201,35 @@ const App: React.FC = () => {
         </div>
       </div>
       <Footer LastData={LastData} />
+
+      {/* Conditional Toast Rendering */}
+      {!isSidePanelVisible && currentError && (
+            <Toast
+                message={currentError}
+                onClose={() => setCurrentError(null)}
+                onClick={() => setIsSidePanelVisible(true)} // Show side panel on click
+            />
+        )}
+
+        {/* Side Panel */}
+        {isSidePanelVisible && (
+            <div className="fixed top-0 right-0 h-full w-80 bg-gray-800 text-white p-4 shadow-lg z-40 overflow-y-auto">
+              <h2 className="text-lg font-semibold mb-4">Error Log</h2>
+              <button
+                  className="mb-4 bg-red-600 text-white px-4 py-2 rounded"
+                  onClick={() => setIsSidePanelVisible(false)}
+              >
+                Close
+              </button>
+              <ul className="space-y-2">
+                {errorLogs.slice().reverse().map((log, index) => (
+                    <li key={index} className="border-b border-gray-600 pb-2">
+                      {log}
+                    </li>
+                ))}
+              </ul>
+            </div>
+        )}
     </>
   );
 };

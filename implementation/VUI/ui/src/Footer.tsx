@@ -20,6 +20,7 @@ interface LastData {
 const Footer = ({ LastData: LastData}) => {
   const getStatusIcon = (LastData: LastData) => {
     if (LastData) {
+      console.log("ENV: ", LastData);
       switch (LastData.ENVIRONMENT) {
         case 'Sun Exposure':
           return <WiHot className="text-red-500 text-7xl" />;
