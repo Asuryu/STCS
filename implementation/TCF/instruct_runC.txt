@@ -1,0 +1,7 @@
+# How to Run C
+
+rm *.o
+gcc -c PID.c -o PID.o
+gcc -c main.c -o main.o
+gcc main.o PID.o -o main
+./main
