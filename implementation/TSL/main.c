@@ -2,54 +2,69 @@
 
 int fd_temp_info_pipe, fd_response_pipe;
 
+int sigint_received = 0;
 
-// void sigint_handler() {
-//     sigint_received = 1;
-// }
+// Signal handler for SIGINT
+void sigint_handler() {
+    sigint_received = 1;
+}
 
 int main() {
 
-    // struct sigaction sigint_action;
-    // sigint_action.sa_handler = sigint_handler;
-    // sigemptyset(&sigint_action.sa_mask);
-    // sigint_action.sa_flags = 0;
-    // if (sigaction(SIGINT, &sigint_action, NULL) == -1) {
-    //     perror("sigaction");
-    //     exit(EXIT_FAILURE);
-    // }
 
-
-    int fd;
     int16_t clock = 0;
 
-    if((mkfifo(TEMP_INFO_PIPE,O_CREAT|O_EXCL|0600)<0) && (errno != EEXIST)){
-		erro_handler("ERROR CREATING TEMP INFO NAMED PIPE"); 
+    // printf("TSL started\n");
+
+    if((mkfifo(TEMP_INFO_PIPE,O_CREAT|O_EXCL|0600)<0) 
+            && (errno != EEXIST)){
+		
+        perror("ERROR CREATING TEMP INFO NAMED PIPE"); 
 		exit(0);
 	}
 
-    if((mkfifo(RESPONSE_PIPE,O_CREAT|O_EXCL|0600)<0) && (errno != EEXIST)){
-		erro_handler("ERROR CREATING RESPONSE NAMED PIPE"); 
+    // printf("TSL created temp_info_pipe\n");
+
+    if((mkfifo(RESPONSE_PIPE,O_CREAT|O_EXCL|0600)<0) 
+            && (errno != EEXIST)){
+
+		perror("ERROR CREATING RESPONSE NAMED PIPE"); 
 		exit(0);
     }
 
-	// Open named pipes
-  	if ((fd_temp_info_pipe = open(TEMP_INFO_PIPE,O_WRONLY))<0){
-		erro_handler("ERROR OPENING SENSOR NAMED PIPE"); 
-		exit(0);
-  	}
-  	if ((fd_response_pipe = open(RESPONSE_PIPE,O_RDONLY))<0){
-		erro_handler("ERROR OPENING CONSOLE NAMED PIPE"); 
-		exit(0);
-  	}  
+    // printf("TSL created response_pipe\n");
+
+    if ((fd_temp_info_pipe = open(TEMP_INFO_PIPE, O_RDWR)) < 0) {
+        
+        perror("ERROR OPENING SENSOR NAMED PIPE");
+        exit(0);
+    }
+    // printf("TSL opened temp_info_pipe\n");
+
+    if ((fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0) {
+        
+        perror("ERROR OPENING CONSOLE NAMED PIPE");
+        exit(0);
+    }
+    // printf("TSL opened response_pipe\n");
+
+    // sleep(10);
+
+    while(!sigint_received){
+        
+    }
 
 
-    // while(!sigint_received){
-    //     sleep(0.2);
-    //     clock++;
-    //     printf("%d",clock);
-    // }
+    // char message[100];
+    // sprintf(message, "TSL: %d", clock);
+    // printf("TSL sending: %s\n", message);
+    // write(fd_temp_info_pipe, message, strlen(message)+1);
+    
+    close(fd_temp_info_pipe);    
+    close(fd_response_pipe);
 
-    close(fd);
+    unlink(TEMP_INFO_PIPE);
+	unlink(RESPONSE_PIPE);
 
     return 0;
-}
+}   

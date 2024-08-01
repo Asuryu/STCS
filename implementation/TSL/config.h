@@ -22,3 +22,12 @@
 #define TEMP_INFO_PIPE "temp_info_pipe"
 #define RESPONSE_PIPE "response_pipe"
 
+struct temperature_info {
+    th_ht pair;
+    int16_t timestamp;
+};
+
+struct th_ht {
+    int thermistor;
+    bool state;
+};
