@@ -1,3 +1,8 @@
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <math.h>
+#include <time.h> 
+
 void pid(float t_in[4], float i[4], float t_before[4], float d_before[4], float h, float set_point) { //AINDA FALTA DEFINIR O RESTO!!!
     
     //Definir variáveis que iremos alterar para testar o controlador
@@ -29,7 +34,10 @@ void pid(float t_in[4], float i[4], float t_before[4], float d_before[4], float 
         p[j] = K * (b * set_point - t_in[j]); 
         d[j] = T_d * pow(T_d + N * h, -1) * d_before[j] - (K * T_d * N) * pow(T_d + N * h, -1) * (t_in[j] - t_before[j]);  
         u[j] = p[j] + i[j] + d[j]; 
-        write_to_log(e[j], p[j], d[j], i[j], u[j]); 
+        
+        //NÃO ATIVAR!
+        //write_to_log(e[j], p[j], d[j], i[j], u[j]); 
+        
         i[j] = i[j] + (K * h) * pow(T_i, -1) * e[j]; 
         d_before[j] = d[j]; 
         t_before[j] = t_in[j]; 

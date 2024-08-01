@@ -1,3 +1,7 @@
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <math.h>
+#include <time.h> 
 #include"pid.h" 
 
 void clear_file() { 
@@ -31,8 +35,6 @@ void write_to_log(float e, float p, float d, float i, float u) {
     fprintf(f, "---Tentativa--- \nErro: %f \nP: %f \nD: %f \nI: %f \nCorrecao a aplicar: %f \n", e, p, d, i, u); 
     fclose(f); 
 }
-
-
 
 int main(int argc, char *argv[]) { 
     int j, chk; 
