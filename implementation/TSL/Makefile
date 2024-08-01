@@ -1,15 +1,18 @@
 CC = gcc
-
 CFLAGS = -Wall -Wextra -std=c99
-
 TARGET = prog
-
+TARGET2 = pipetest
 SRC = main.c
+SRC2 = pipetest.c
+HEADER = config.h
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET2)
 
-$(TARGET): $(SRC)
+$(TARGET): $(SRC) $(HEADER)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)
 
+$(TARGET2): $(SRC2) $(HEADER)
+	$(CC) $(CFLAGS) -o $(TARGET2) $(SRC2)
+
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(TARGET2)

@@ -1,0 +1,10 @@
+*.prog
+*.lst
+*.o
+*.eep
+*.lss
+*.map
+*.sym
+*.respose_pipe
+*.temp_info_pipe
+*.pipetest
