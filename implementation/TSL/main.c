@@ -1,5 +1,6 @@
 #include "config.h"
 
+// Initialization for threads
 struct sigaction sa;
 volatile sig_atomic_t sigint_received = 0;
 pthread_t thread;
@@ -13,13 +14,29 @@ void TSL_init(struct TSL_data *tsl){
     tsl->period = NORMAL;
 }
 
-// Signal handler for SIGINT
-void sigint_handler() {
+
+void sigint_handler() {/** 
+    *@brief SIGINT handler function
+
+    * This function will set the sigint_received variable to 1 when a SIGINT signal is received.
+
+    *@param void 
+    *@return void
+    **/
+
     printf("SIGINT received\n");
     sigint_received = 1;
 }
 
-int cleanup() {
+
+int cleanup() {/**
+    * @brief Cleanup function
+
+    * This function will close the file descriptors and unlink the named pipes.
+
+    * @param void
+    * @return int: 0 if successful, -1 otherwise
+    **/
 
     pthread_join(thread, NULL);
     while (wait(NULL) != -1){
@@ -28,19 +45,29 @@ int cleanup() {
     close(fd_temp_info_pipe);
     close(fd_response_pipe);
 
+    unlink(TEMP_INFO_PIPE);
+    unlink(RESPONSE_PIPE);
+
     return 0;
 }
 
-void handle_error(char *error) {
+
+void handle_error(char *error) {/** 
+    * @brief Handle error function
+    
+    * This function will print the error message and call the cleanup function.
+
+    * @param error (char*): The error message to be printed
+    * @return void    
+    **/
+
     perror(error);
     cleanup();
     exit(0);
 }
 
 
-
 void verify_periods(struct TSL_data *tsl) {
-
     /**
      * @brief Verifies and sets the period based on the 8 lower bits of the clock.
      
@@ -67,9 +94,7 @@ void verify_periods(struct TSL_data *tsl) {
 }
 
 
-
 void setHeaterState(struct ThermalPair *TP_block, int *heater_state){
-
     /**
      * @brief This function will turn ON/OFF each Heater. Updates each heater in ThermalPair according to states in heater_state
      
@@ -84,7 +109,6 @@ void setHeaterState(struct ThermalPair *TP_block, int *heater_state){
     TP_block[2].heater = heater_state[2];
     TP_block[3].heater = heater_state[3];   
 }
-
 
 
 int modify_temperatures(struct ThermalPair* TP_block, int state){
@@ -134,7 +158,6 @@ int modify_temperatures(struct ThermalPair* TP_block, int state){
 }
 
 
- 
 const char * get_timestamp() {
 
     /**
@@ -165,15 +188,33 @@ const char * get_timestamp() {
 
 
 int file_exists(const char *filename) {
+    /** 
+    * @brief Check if the file already exists. (0 in case of file exist and 1 in case if file doesn't exists)
+ 
+    * @param filename (char*): The csv file name
+   
+    * @return: int
+    */
+
     return access(filename, F_OK) == 0;
 }
  
  
 // Build the data string
 char * buildData (struct ThermalPair* TP_block,const char *timestamp, int state){
+    /** 
+    * @brief This function will build the data to put in csv. In this case without error. 
+    * Like this -6.000000, 3.000000, 5.000000, -2.000000, Off, Off, Off, Off, 2024-08-02T10:35:25.517, Eclipse, null
  
-    char *buffer = malloc(512);
+    * @param TP_block (ThermalPair*): Have the heater (value 0 for Off and 1 for on) and thermistor (temperature) 
+    informations to build the string
+    * @param timestamp (char *): Have the time information
+    * @param state (int): Have the state information can be Normal (with value 1), Eclipse (with value 2), Sun Exposure (with value 3)
+   
+    * @return: char *
+    */
 
+    char *buffer = malloc(512);
  
     snprintf(buffer, 512, "%f, %f, %f, %f, %s, %s, %s, %s, %s, %s, null", 
                         TP_block[0].thermistor, 
@@ -193,9 +234,21 @@ char * buildData (struct ThermalPair* TP_block,const char *timestamp, int state)
  
 }
  
+
 // function to write in cvs (correct)
 void writeToCSVCorrect(const char *filename, const char *header, const char *data){
+    /** 
+    * @brief This function appends data to a file (CSV). If the file doesn't exist, it creates
+    * the file and writes a header before appending the data.
  
+    * @param filename (char*): The csv file name
+    * @param header (char *): The header of the csv file. Like this: "THERM-01, THERM-02, THERM-03, 
+    * THERM-04, HTR-1, HTR-2, HTR-3, HTR-4, TIMESTAMP, ENVIRONMENT, ERROR"
+    * @param data (char *): Data to save in CSV file
+    
+    * @return: void
+    */
+
     FILE *file;
  
     int exists = file_exists(filename);
@@ -214,9 +267,23 @@ void writeToCSVCorrect(const char *filename, const char *header, const char *dat
  
 }
  
+
 // function to write in cvs (incorrect)
 void writeToCSVError(const char *filename, const char *header, char *error, const char *timestamp){
+     /** 
+    * @brief This function appends data to a file (CSV) with problems "null, null, null, null, null, 
+    * null, null, null, 2024-08-02T10:35:27.121, null, Sensor Error". If the file doesn't exist, it 
+    * creates the file and writes a header before appending the data.
  
+    * @param filename (char*): The csv file name
+    * @param header (char *): The header of the csv file. Like this: "THERM-01, THERM-02, THERM-03, 
+    * THERM-04, HTR-1, HTR-2, HTR-3, HTR-4, TIMESTAMP, ENVIRONMENT, ERROR"
+    * @param error (char *): The error message
+    * @param timestamp (char *): The time information
+    
+    * @return: void
+    */
+
     FILE *file;
  
     char *buffer = malloc(512);
@@ -243,10 +310,14 @@ void writeToCSVError(const char *filename, const char *header, char *error, cons
 }
 
 
-// Functions and variables for Pipe
-int fd_temp_info_pipe, fd_response_pipe;
+void* read_response_thread(void* args) {/**
+    * @brief Read response thread function
 
-void* read_response_thread(void* args) {
+    * This thread will read the response from the pipe and update the new_heater_states array.
+
+    * @param args (void*): The arguments for the thread
+    * @return void*
+    */
 
     struct sigaction sigint_action;
 	sigint_action.sa_handler = sigint_handler;
@@ -282,6 +353,7 @@ void* read_response_thread(void* args) {
     return NULL;
 }
 
+
 void write_temp_info_pipe(char* message) {
     write(fd_temp_info_pipe, message, strlen(message) + 1);
 }
@@ -294,6 +366,7 @@ int main() {
     const char *header = "THERM-01, THERM-02, THERM-03, THERM-04, HTR-1, HTR-2, HTR-3, HTR-4, TIMESTAMP, ENVIRONMENT, ERROR";
 
 
+   // Signal handler for SIGINT (Ctrl+C)
     struct sigaction sigint_action;
 	sigint_action.sa_handler = sigint_handler;
 	sigemptyset(&sigint_action.sa_mask);
@@ -306,8 +379,8 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 
-    // printf("TSL started\n");
 
+    // Create the named pipes
     if((mkfifo(TEMP_INFO_PIPE,O_CREAT|O_EXCL|0600)<0) 
             && (errno != EEXIST)){
 		
@@ -316,11 +389,8 @@ int main() {
 
         handle_error(error_msg); 
 		exit(0);
-	}
 
-    // printf("TSL created temp_info_pipe\n");
-
-    if((mkfifo(RESPONSE_PIPE,O_CREAT|O_EXCL|0600)<0) 
+	}if((mkfifo(RESPONSE_PIPE,O_CREAT|O_EXCL|0600)<0) 
             && (errno != EEXIST)){
         
         char *error_msg = "ERROR CREATING RESPONSE NAMED PIPE";
@@ -330,8 +400,7 @@ int main() {
 		exit(0);
     }
 
-    // printf("TSL created response_pipe\n");
-
+    // Open the named pipes
     if ((fd_temp_info_pipe = open(TEMP_INFO_PIPE, O_RDWR)) < 0) {
         
         char *error_msg = "ERROR OPENING SENSOR NAMED PIPE";
@@ -339,10 +408,8 @@ int main() {
 
         handle_error(error_msg); 
         exit(0);
-    }
-    // printf("TSL opened temp_info_pipe\n");
 
-    if ((fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0) {
+    }if ((fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0) {
         
         char *error_msg = "ERROR OPENING CONSOLE NAMED PIPE";
         writeToCSVError(filename, header, error_msg, get_timestamp());
@@ -350,6 +417,7 @@ int main() {
         handle_error(error_msg); 
         exit(0);
     }
+
 
     // Initialize the Heaters Sstate and the Thermistors temperature
     // the Heaters start in OFF state and the temperature is a random number between -5 and 7
@@ -368,14 +436,15 @@ int main() {
     TSL_init(&tsl);
 
 
+    // Create the thread to read the response from the pipe and update the new_heater_states array
     pthread_t thread;
     ThreadArgs thread_args = {fd_response_pipe, new_heater_states};
-
 
     if (pthread_create(&thread, NULL, read_response_thread, &thread_args) != 0) {
         handle_error("Failed to create thread");
         return 1;
     }
+
 
     // Cicle for the continuous process
     while(!sigint_received){
@@ -391,7 +460,7 @@ int main() {
 
         setHeaterState(pair_array, new_heater_states);
 
-        // print pair_array
+        // Print pair array
         for (int i = 0; i < 4; i++)
         {
             printf("Heater: %d, Thermistor: %f\n", pair_array[i].heater, pair_array[i].thermistor);
@@ -404,7 +473,7 @@ int main() {
             }
         } 
 
-
+        // Write to the pipe the temperatures and states
         char message[100];
         //{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE}
         sprintf(message, "%d;%f-%d;%f-%d;%f-%d;%f-%d", 
@@ -416,9 +485,8 @@ int main() {
 
         write_temp_info_pipe(message);
 
-        data = buildData(pair_array, get_timestamp(), tsl.period); 
-
         // Write info about heaters state and thermistors temperature to the CSV file
+        data = buildData(pair_array, get_timestamp(), tsl.period); 
         writeToCSVCorrect(filename, header, data);
 
         tsl.clock++;        
@@ -430,7 +498,6 @@ int main() {
         writeToCSVError(filename, header, error_msg, get_timestamp());
         return -1;
     }
-
 
     return 0;
 }   

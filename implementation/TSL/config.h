@@ -49,11 +49,15 @@ struct sigaction sigtstp_action;
 
 // Inicialize all the functions
 void TSL_init(struct TSL_data *tsl);
+int cleanup();
+void handle_error(char *error);
 void verify_periods(struct TSL_data *tsl);
-
 void setHeaterState(struct ThermalPair* TP_block, int *heater_state);
 int modify_temperatures(struct ThermalPair *TP_block, int state);
 const char* get_timestamp();
-char * buildData(struct ThermalPair* TP_block, const char *timestamp, int state);
+int file_exists(const char *filename);
+char * buildData (struct ThermalPair* TP_block,const char *timestamp, int state);
 void writeToCSVCorrect (const char *filename, const char *header, const char *data);
 void writeToCSVError(const char *filename, const char *header, char *error,const char *timestamp);
+void* read_response_thread(void* args);
+void write_temp_info_pipe(char* message);
