@@ -207,6 +207,10 @@ void * control_loop(void * pdata)
     
 }
 
+void setFrequency(int newFreq){
+    frequency = newFreq > 0 && newFreq < 6 ? newFreq : frequency;
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2)
