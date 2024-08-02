@@ -11,7 +11,7 @@
 //d_before are the prior derivative values provided to compute the actual varriable
 //h is the step, i.e. 1/frequency 
 //set_point it's the goal temperature
-void pid(float received_temp[4], float integral_PID[4], float initial_temp[4], float initial_derivate_PID[4], float step, float set_point, int response[4]) { //AINDA FALTA DEFINIR O RESTO!!!
+void pid(float received_temp[4], float integral_PID[4], float initial_temp[4], float initial_derivate_PID[4], float step, float set_point[4], int response[4]) { //AINDA FALTA DEFINIR O RESTO!!!
     
     //Definition of the controller constants
     float K, T_i, T_d, N, b;
@@ -39,10 +39,10 @@ void pid(float received_temp[4], float integral_PID[4], float initial_temp[4], f
     for(int j = 0; j < 4; j++){ 
         //For now, let K be the Proportional Constant and k the actual iteration
         //Define the error function, e(t_k) = SET_POINT - VALOR_ATUAL
-        error[j] = set_point - received_temp[j]; 
+        error[j] = set_point[j] - received_temp[j]; 
         //Define the proportional function of the PID controller 
         //p(t) = K * (b * set_point - valor_atual)
-        proportional[j] = K * (b * set_point - received_temp[j]); 
+        proportional[j] = K * (b * set_point[j] - received_temp[j]); 
         //Define the actual derivative value, d(t_k)
         //d(t_k) = T_d * (1/(T_d+N*step)) * d_(t_k-1) - (K * T_d * N) * (1/(T_d + N * step)) * (t_k-t_k-1)
         derivative[j] = T_d * pow(T_d + N * step, -1) * initial_derivate_PID[j] - (K * T_d * N) * pow(T_d + N * step, -1) * (received_temp[j] - initial_temp[j]);  

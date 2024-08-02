@@ -4,7 +4,7 @@
 float temps[HISTORY_SIZE][N_HEATERS];
 unsigned int enabled;
 
-float set_point;
+float set_point[N_HEATERS];
 int lastRegIndex;
 
 int frequency;
@@ -90,94 +90,121 @@ float getThermisterTempsAt(int hist_index, int therm_index)
 }
 
 // try start thread (w/ enable set to 1)
-int enableTCF(pthread_t *pidThread)
+int enableTCF(pthread_t *pidThread, PipeData* pd)
+{
+    enabled = 1;
+    return pthread_create(pidThread, NULL, &control_loop, pd) != 0 ? -1 : 0;
+}
+
 {
     enabled = 1;
     return pthread_create(pidThread, NULL, &control_loop, NULL) != 0 ? -1 : 0;
 }
 
-void disableTCF(pthread_t *pidThread)
+void disableTCF(pthread_t *pidThread, PipeData *pd)
 {
     enabled = 0;
     pthread_join(*pidThread, NULL);
+    
+    openPipes(pd);
+    char *buffer = malloc(sizeof(char) * 8 +1);
+    sprintf(buffer, "%d;%d;%d;%d", 0,0,0,0);
+    buffer[strlen(buffer)-1] = '\0';
+
+    if(writeToPipe(pd->fd_response_pipe, buffer) != 0) printf("ERROR WRITING TO PIPE.\n");
+    closePipes(pd);
 }
 
-void setSetPoint(float setPoint)
+void setSetPoint(float newSetPoint, int index)
 {
-    set_point = setPoint >= -20 && setPoint <= 20 ? setPoint : set_point;
+    set_point[index] = newSetPoint >= -20 && newSetPoint <= 20 ? newSetPoint : set_point[index];
 }
 
-void *control_loop()
+void setSetPoints(float newSetPoints[N_HEATERS])
 {
+    for(int i=0; i<N_HEATERS; i++)
+        setSetPoint(newSetPoints[i],i);
+}
 
-    int fd_temp_info_pipe, fd_response_pipe;
-    if ((mkfifo(TEMP_INFO_PIPE, O_CREAT | O_EXCL | 0600) < 0) && (errno != EEXIST))
-    {
-        printf("ERROR CREATING TEMP INFO NAMED PIPE\n");
-        exit(0);
-    }
+void setAllSetPoints(float newSetPoint)
+{
+    for(int i=0; i<N_HEATERS; i++)
+        setSetPoint(newSetPoint,i);
+}
 
-    if ((mkfifo(RESPONSE_PIPE, O_CREAT | O_EXCL | 0600) < 0) && (errno != EEXIST))
+int openPipes(PipeData *pd){
+    if ((pd->fd_temp_info_pipe = open(TEMP_INFO_PIPE, O_RDWR)) < 0 || (pd->fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0)
     {
-        printf("ERROR CREATING RESPONSE NAMED PIPE\n");
-        exit(0);
+        perror("ERROR OPENING NAMED PIPES\n");
+        return -1;
     }
+    return 0;
+}
 
-    if ((fd_temp_info_pipe = open(TEMP_INFO_PIPE, O_RDWR)) < 0)
-    {
-        perror("ERROR OPENING SENSOR NAMED PIPE");
-        exit(0);
-    }
+int closePipes(PipeData *pd){
+    fclose(pd->fd_response_pipe);
+    fclose(pd->fd_temp_info_pipe);
+}
 
-    if ((fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0)
+int createPipes(){
+    if (((mkfifo(TEMP_INFO_PIPE, O_CREAT | O_EXCL | 0600) < 0) && (errno != EEXIST)) || ((mkfifo(RESPONSE_PIPE, O_CREAT | O_EXCL | 0600) < 0) && (errno != EEXIST)))
     {
-        perror("ERROR OPENING CONSOLE NAMED PIPE");
-        exit(0);
+        perror("ERROR CREATING NAMED PIPES\n");
+        return -1;
     }
+    return 0;
+}
+
+int writeToPipe(int fd, char* buf){
+    return write(fd, buf, sizeof(buf));
+}
+
+
+
+void * control_loop(void * pdata)   
+{
+    PipeData *pd = (PipeData*) pdata;
+
+    if(openPipes(pd) == -1) return -1;
 
     char buffer[1024];
     ssize_t bytes_read;
     float temp_values[N_HEATERS];
-    int state_values[N_HEATERS];
     int response[4];
     float integral[] = {0, 0, 0, 0};
-    float derivative[] = {0, 0, 0, 0};
-    float initial_temp[] = {0, 0, 0, 0};
-    float step = 1 / frequency;
+    float derivative[] = {0, 0, 0, 0}; 
+    float initial_temp[] = {0, 0, 0, 0}; 
+    float step = 1/ frequency;
     int index;
-    float setPoint = 20;
+    
 
     while (enabled)
     {
-        // Read Temperatures
-        // TODO: select instead of read
-        bytes_read = read(fd_temp_info_pipe, buffer, sizeof(buffer) - 1);
-        if (bytes_read > 0)
-        {
+        //Read Temperatures
+        bytes_read = read(pd->fd_temp_info_pipe, temps, sizeof(buffer) - 1);
+        if (bytes_read > 0){
             buffer[bytes_read] = '\0';
-            printf("Received: %s\n", buffer);
-            sscanf(buffer, TEMPS_SINTAX, &index, &temp_values[0], &state_values[0], &temp_values[1], &state_values[1], &temp_values[2], &state_values[2], &temp_values[3], &state_values[3]);
-
-            if (index == lastRegIndex)
-                continue;
-
+            sscanf(buffer, TEMPS_SINTAX, &index, &temp_values[0], &temp_values[1], &temp_values[2], &temp_values[3]);
+            
+            if(index == lastRegIndex) continue;
+            
             lastRegIndex = index;
             setTemps(temp_values);
         }
 
-        // Control Function
+        //Control Function
+        pid(temp_values, integral, initial_temp, derivative, step, set_point, response); 
 
-        pid(temp_values, integral, initial_temp, derivative, step, setPoint, response);
-
-        // Write Response
+        //Write Response
         sprintf(buffer, "%d;%d;%d;%d", response[0], response[1], response[2], response[3]);
-        write(fd_response_pipe, buffer, 8);
-        printf("Sent: %s\n", buffer);
-        sleep(1 / frequency);
+        buffer[strlen(buffer)-1] = '\0';
+        if(writeToPipe(pd->fd_response_pipe, buffer) != 0) printf("ERROR WRITING TO PIPE.\n");
+        sleep(step);
     }
 
-    // TODO: close pipes
+    closePipes(pd);
     return 0;
+    
 }
 
 int main(int argc, char **argv)
@@ -195,6 +222,11 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
+    if(createPipes() == -1) return -1;
+
+    setAllSetPoints(0); //default
+
+
     setbuf(stdout, NULL);
 
     lastRegIndex = -1;
@@ -206,14 +238,16 @@ int main(int argc, char **argv)
     while (i < HISTORY_SIZE)
         temps[i++][0] = NAN;
 
-    if (enableTCF(&pidThread) == -1)
+    PipeData pd;
+
+    if (enableTCF(&pidThread, &pd) == -1)
         return -1;
 
     // for testing only!
     printf("Press enter to end ");
     getchar();
 
-    disableTCF(&pidThread);
+    disableTCF(&pidThread, &pd);
 
     return 0;
 }

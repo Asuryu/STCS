@@ -21,6 +21,10 @@
 #define TEMP_INFO_PIPE "/tmp/temp_info_pipe"
 #define RESPONSE_PIPE "/tmp/response_pipe"
 
+typedef struct{
+    int fd_temp_info_pipe, fd_response_pipe;
+} PipeData;
+
 void setTemps(const float newTemps[N_HEATERS]);
 float *getTempsAt(int index);
 float getThermisterTempsAt(int hist_index, int therm_index);
@@ -28,3 +32,4 @@ int enableTCF(pthread_t *pidThread);
 void disableTCF(pthread_t *pidThread);
 void setSetPoint(float setPoint);
 void *control_loop();
+
