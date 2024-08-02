@@ -144,7 +144,7 @@ char * buildData (struct ThermalPair* TP_block,const char *timestamp, int state)
                         TP_block[2].heater ? "On" : "Off", 
                         TP_block[3].heater ? "On" : "Off",                        
                         timestamp,
-                        state == 0 ? "Normal" : (state == 1 ? "Eclipse" : (state == 2 ? "Sun Exposure" : "Unknown")));
+                        state == NORMAL ? "Normal" : (state == ECLIPSE ? "Eclipse" : (state == SUN_EXPOSURE ? "Sun Exposure" : "Unknown")));
  
     printf("%s\n", buffer);
    
@@ -337,6 +337,8 @@ int main() {
 
         // Verify Periods
         verify_periods(&tsl);
+        printf("Clock: %d\n", tsl.clock);
+        printf("Period: %d\n", tsl.period);
 
         // something to get the data from pipe
 
@@ -360,7 +362,8 @@ int main() {
         } 
         char message[100];
         //{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE}
-        sprintf(message, "%f-%d;%f-%d;%f-%d;%f-%d", 
+        sprintf(message, "%d;%f-%d;%f-%d;%f-%d;%f-%d", 
+                    tsl.clock,
                     pair_array[0].thermistor, pair_array[0].heater, 
                     pair_array[1].thermistor, pair_array[1].heater, 
                     pair_array[2].thermistor, pair_array[2].heater, 
@@ -371,8 +374,7 @@ int main() {
         data = buildData(pair_array, get_timestamp(), tsl.period); 
         writeToCSVCorrect(filename, header, data);
 
-        tsl.period++;
-        printf("%d",tsl.period);
+        tsl.clock++;        
     }
 
     if (cleanup() <0 ) {
