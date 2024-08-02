@@ -1,3 +1,5 @@
+#define _DEFAULT_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,17 +9,13 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
-#include <sys/mman.h>
 #include <sys/fcntl.h>
-#include <sys/shm.h>
-#include <sys/ipc.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <pthread.h>
-#include <time.h>
-#include <semaphore.h>
-#include <sys/msg.h>
+#include <sys/time.h>
 #include <sys/select.h>
+
 
 // Define response informations for pipe
 #define TEMP_INFO_PIPE "temp_info_pipe"
@@ -30,24 +28,31 @@
 
 typedef enum {false, true} bool;
 
-// Define Structcs
-struct ThermalPair {
-    bool heater;
-    float thermistor;
-};
+typedef struct ThermalPair {
+    int heater;
+    double thermistor;
+} ThermalPair;
 
-struct TSL_data{
-    uint16_t clock;
+typedef struct TSL_data {
+    int16_t clock;
     int period;     //period being analyzed
-};
+} TSL_data;
 
+typedef struct {
+    int fd;
+    int *new_heater_states;
+} ThreadArgs;
+
+struct sigaction sigint_action;
+struct sigaction sigtstp_action;
 
 // Inicialize all the functions
 void TSL_init(struct TSL_data *tsl);
 void verify_periods(struct TSL_data *tsl);
-void setHeaterState(struct ThermalPair* TP_block, char *heater_state);
+
+void setHeaterState(struct ThermalPair* TP_block, int *heater_state);
 int modify_temperatures(struct ThermalPair *TP_block, int state);
 const char* get_timestamp();
-char * buildData(struct ThermalPair* TP_block, char *timestamp, int state);
+char * buildData(struct ThermalPair* TP_block, const char *timestamp, int state);
 void writeToCSVCorrect (const char *filename, const char *header, const char *data);
-void writeToCSVError(const char *filename, const char *header, char *error, char *timestamp);
+void writeToCSVError(const char *filename, const char *header, char *error,const char *timestamp);
