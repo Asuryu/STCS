@@ -1,10 +1,10 @@
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
-#include <math.h> //4 NaN 
+#include <math.h> //4 NaN
 #include <time.h>
 
 #include <pthread.h>
-#include<unistd.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -18,5 +18,13 @@
 //{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE}
 #define TEMPS_SINTAX "%d;%f-%d;%f-%d;%f-%d;%f-%d"
 
-#define TEMP_INFO_PIPE "temp_info_pipe"
-#define RESPONSE_PIPE "response_pipe"
+#define TEMP_INFO_PIPE "/tmp/temp_info_pipe"
+#define RESPONSE_PIPE "/tmp/response_pipe"
+
+void setTemps(const float newTemps[N_HEATERS]);
+float *getTempsAt(int index);
+float getThermisterTempsAt(int hist_index, int therm_index);
+int enableTCF(pthread_t *pidThread);
+void disableTCF(pthread_t *pidThread);
+void setSetPoint(float setPoint);
+void *control_loop();

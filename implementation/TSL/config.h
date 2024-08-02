@@ -18,8 +18,8 @@
 
 
 // Define response informations for pipe
-#define TEMP_INFO_PIPE "temp_info_pipe"
-#define RESPONSE_PIPE "response_pipe"
+#define TEMP_INFO_PIPE "/tmp/temp_info_pipe"
+#define RESPONSE_PIPE "/tmp/response_pipe"
 
 // Define states and Bool Type
 #define NORMAL 1

@@ -68,7 +68,7 @@ emptyAtI:
  *      NULL if the index is out of bounds or there is no data
  *      imutable float array containing the temperatures at the given index
  */
-const float *getTempsAt(int index)
+float *getTempsAt(int index)
 {
     return index < 0 || index >= HISTORY_SIZE || isnan(temps[index][0]) ? NULL : temps[index];
 }
@@ -84,7 +84,7 @@ const float *getTempsAt(int index)
  *      NaN if any index is out of bounds or there is no data
  *      float containing the temperature of the given thermister at the given history index
  */
-const float getThermisterTempsAt(int hist_index, int therm_index)
+float getThermisterTempsAt(int hist_index, int therm_index)
 {
     return hist_index < 0 || therm_index < 0 || hist_index >= HISTORY_SIZE || therm_index >= N_HEATERS ? NAN : temps[hist_index][therm_index];
 }
@@ -107,19 +107,19 @@ void setSetPoint(float setPoint)
     set_point = setPoint >= -20 && setPoint <= 20 ? setPoint : set_point;
 }
 
-void * control_loop(void * pdata)   
+void *control_loop()
 {
 
     int fd_temp_info_pipe, fd_response_pipe;
     if ((mkfifo(TEMP_INFO_PIPE, O_CREAT | O_EXCL | 0600) < 0) && (errno != EEXIST))
     {
-        perror("ERROR CREATING TEMP INFO NAMED PIPE");
+        printf("ERROR CREATING TEMP INFO NAMED PIPE\n");
         exit(0);
     }
 
     if ((mkfifo(RESPONSE_PIPE, O_CREAT | O_EXCL | 0600) < 0) && (errno != EEXIST))
     {
-        perror("ERROR CREATING RESPONSE NAMED PIPE");
+        printf("ERROR CREATING RESPONSE NAMED PIPE\n");
         exit(0);
     }
 
@@ -131,63 +131,65 @@ void * control_loop(void * pdata)
 
     if ((fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0)
     {
-        print("ERROR OPENING CONSOLE NAMED PIPE");
+        perror("ERROR OPENING CONSOLE NAMED PIPE");
         exit(0);
     }
 
     char buffer[1024];
     ssize_t bytes_read;
     float temp_values[N_HEATERS];
+    int state_values[N_HEATERS];
     int response[4];
     float integral[] = {0, 0, 0, 0};
-    float derivative[] = {0, 0, 0, 0}; 
-    float initial_temp[] = {0, 0, 0, 0}; 
-    float step = 1/ frequency;
+    float derivative[] = {0, 0, 0, 0};
+    float initial_temp[] = {0, 0, 0, 0};
+    float step = 1 / frequency;
     int index;
     float setPoint = 20;
 
     while (enabled)
     {
-        //Read Temperatures
-        //TODO: select instead of read
-        bytes_read = read(fd_temp_info_pipe, temps, sizeof(buffer) - 1); 
-        if (bytes_read > 0){
+        // Read Temperatures
+        // TODO: select instead of read
+        bytes_read = read(fd_temp_info_pipe, buffer, sizeof(buffer) - 1);
+        if (bytes_read > 0)
+        {
             buffer[bytes_read] = '\0';
-            sscanf(buffer, TEMPS_SINTAX, &index, &temp_values[0], &temp_values[1], &temp_values[2], &temp_values[3]);
-            
-            if(index == lastRegIndex) continue;
-            
+            printf("Received: %s\n", buffer);
+            sscanf(buffer, TEMPS_SINTAX, &index, &temp_values[0], &state_values[0], &temp_values[1], &state_values[1], &temp_values[2], &state_values[2], &temp_values[3], &state_values[3]);
+
+            if (index == lastRegIndex)
+                continue;
+
             lastRegIndex = index;
             setTemps(temp_values);
         }
 
-        //Control Function
-        
-        pid(temp_values, integral, initial_temp, derivative, step, setPoint, response); 
+        // Control Function
 
-        //Write Response
+        pid(temp_values, integral, initial_temp, derivative, step, setPoint, response);
+
+        // Write Response
         sprintf(buffer, "%d;%d;%d;%d", response[0], response[1], response[2], response[3]);
         write(fd_response_pipe, buffer, 8);
         sleep(1 / frequency);
     }
 
-    //TODO: close pipes
-    
-}
-
-const float *getTempsAt(int index){
-    return index < 0 || index >= HISTORY_SIZE || isnan(temps[index][0]) ? NULL : temps[index];
+    // TODO: close pipes
+    return 0;
 }
 
 int main(int argc, char **argv)
 {
-    if(argc != 2){
-        printf("Usage: %s <set_point>\n", argv[0]);
+    if (argc != 2)
+    {
+        printf("Usage: %s <freq>\n", argv[0]);
         exit(-1);
     }
 
     frequency = atoi(argv[1]);
-    if(frequency < 1 || frequency > 5){
+    if (frequency < 1 || frequency > 5)
+    {
         printf("Invalid frequency. 1 <= freq <= 5 \n");
         exit(-1);
     }
