@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include <math.h> //4 NaN
+#include <math.h> 
 
 #include <pthread.h>
-#include<unistd.h>
+#include <unistd.h>
 
 #define N_HEATERS 4
 #define HISTORY_SIZE 2
@@ -38,6 +38,7 @@ void disableTCF(pthread_t *pidThread) {
 void setSetPoint(float setPoint) {
    set_point = setPoint >= -20 && setPoint <= 20 ? setPoint : set_point;
 }
+
 int main(int argc, char **argv) {
     //memset(&temps, nan, sizeof(temps)); //init array with NaNs so later we can check if it has input temps or not
     enabled = 1;
