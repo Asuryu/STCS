@@ -1,6 +1,13 @@
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <math.h>
-#include <time.h> 
+#ifndef PID_H
+#define PID_H
 
-void pid(float t_in[4], float i[4], float t_before[4], float d_before[4], float h, float set_point); 
+
+//t_in -> received_temp
+//i -> inetegral_PID
+//t_before -> initial_temp
+//d_before -> initial_derivate_PID
+//h -> step
+//set_point é a temperatura de objetivo
+void pid(float received_temp[4], float integral_PID[4], float initial_temp[4], float initial_derivate_PID[4], float step, float set_point, int response[4]); 
+
+#endif
