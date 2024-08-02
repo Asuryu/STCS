@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "wait.h": "c",
-        "stdint.h": "c"
-    }
-}
