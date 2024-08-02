@@ -67,7 +67,7 @@ void setHeaterState(struct ThermalPair *TP_block, int *heater_state){
 }
 
 
-// Function to update temperatures based on the state -> 0: Normal    1: Eclipse    2: Sun Exposure  
+// Function to update temperatures based on the state -> 1: Normal    2: Eclipse    3: Sun Exposure  
 int modify_temperatures(struct ThermalPair* TP_block, int state){
     
     switch (state) {
@@ -131,12 +131,20 @@ int file_exists(const char *filename) {
 // Build the data string
 char * buildData (struct ThermalPair* TP_block,const char *timestamp, int state){
  
-     char *buffer = malloc(512);
+    char *buffer = malloc(512);
+
  
-    snprintf(buffer, 512, "%d, %d, %d, %d, %f, %f, %f, %f, %s, %d, null", 
-                        TP_block[0].heater, TP_block[1].heater, TP_block[2].heater, TP_block[3].heater,
-                        TP_block[0].thermistor, TP_block[1].thermistor, TP_block[2].thermistor, TP_block[3].thermistor,
-                        timestamp, state);
+    snprintf(buffer, 512, "%f, %f, %f, %f, %s, %s, %s, %s, %s, %s, null", 
+                        TP_block[0].thermistor, 
+                        TP_block[1].thermistor, 
+                        TP_block[2].thermistor, 
+                        TP_block[3].thermistor,
+                        TP_block[0].heater ? "On" : "Off", 
+                        TP_block[1].heater ? "On" : "Off", 
+                        TP_block[2].heater ? "On" : "Off", 
+                        TP_block[3].heater ? "On" : "Off",                        
+                        timestamp,
+                        state == 0 ? "Normal" : (state == 1 ? "Eclipse" : (state == 2 ? "Sun Exposure" : "Unknown")));
  
     printf("%s\n", buffer);
    
@@ -342,6 +350,8 @@ int main() {
         
         
 
+         // 1 -> Normal 
+         // 2 -> 
         
         for(int i=0; i<4; i++){
             if(modify_temperatures(&pair_array[i], tsl.period) == -1){
