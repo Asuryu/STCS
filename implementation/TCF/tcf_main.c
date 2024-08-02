@@ -149,7 +149,8 @@ void * control_loop(void * pdata)
     while (enabled)
     {
         //Read Temperatures
-        bytes_read = read(fd_temp_info_pipe, temps, sizeof(buffer) - 1);
+        //TODO: select instead of read
+        bytes_read = read(fd_temp_info_pipe, temps, sizeof(buffer) - 1); 
         if (bytes_read > 0){
             buffer[bytes_read] = '\0';
             sscanf(buffer, TEMPS_SINTAX, &index, &temp_values[0], &temp_values[1], &temp_values[2], &temp_values[3]);
@@ -169,6 +170,8 @@ void * control_loop(void * pdata)
         write(fd_response_pipe, buffer, 8);
         sleep(1 / frequency);
     }
+
+    //TODO: close pipes
     
 }
 
