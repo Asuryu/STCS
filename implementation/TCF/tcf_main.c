@@ -178,10 +178,20 @@ const float *getTempsAt(int index){
 
 int main(int argc, char **argv)
 {
+    if(argc != 2){
+        printf("Usage: %s <set_point>\n", argv[0]);
+        exit(-1);
+    }
+
+    frequency = atoi(argv[1]);
+    if(frequency < 1 || frequency > 5){
+        printf("Invalid frequency. 1 <= freq <= 5 \n");
+        exit(-1);
+    }
+
     setbuf(stdout, NULL);
 
     lastRegIndex = -1;
-    frequency = 5;
 
     pthread_t pidThread;
     unsigned i = 0;
