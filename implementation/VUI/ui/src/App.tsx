@@ -8,14 +8,12 @@ import {
   Tooltip,
   Legend,
   ReferenceArea,
-  Label,
 } from "recharts";
 import "./App.css";
 import Footer from "./Footer";
 import Toast from "./error_log"; // Ensure the path is correct
 import { Slider } from "./components/ui/slider";
-import { Label2 }  from "@/components/ui/label"
-
+import { Label2 } from "@/components/ui/label";
 
 interface DataPoint {
   THERM_01: number;
@@ -115,7 +113,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const updateDisplayData = () => {
       const now = new Date().getTime();
-      const timeWindow = now - (rangeTime * 1000);
+      const timeWindow = now - rangeTime * 1000;
 
       setDisplayData((prevDisplayData) => {
         const newDisplayData = [
@@ -131,9 +129,9 @@ const App: React.FC = () => {
         return newDisplayData;
       });
     };
-    const interval = setInterval(updateDisplayData, 1000); // Update display data every second
+    const interval = setInterval(updateDisplayData, refreshTime * 1000); // Update display data based on refreshTime
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshTime, rangeTime]);
 
   const getReferenceAreas = (data: DataPoint[], heaterKey: keyof DataPoint) => {
     const referenceAreas: { x1: string; x2: string }[] = [];
@@ -173,12 +171,11 @@ const App: React.FC = () => {
   ];
 
   const handleSlider1Change = (value) => {
-    ws.current?.send(value)
-    setRefreshTime(value)
-  }
+    setRefreshTime(value);
+  };
   const handleSlider2Change = (value) => {
-    setRangeTime(value)
-  }
+    setRangeTime(value);
+  };
 
   return (
     <>
@@ -187,24 +184,35 @@ const App: React.FC = () => {
       <div className="my-10 p-4 w-full flex">
         <div className="mx-10 p-4 w-1/2">
           <div className="mb-10">
-            <Label2 className="text-xl font-bold" htmlFor="Slider1">Adjust Data Frequency</Label2>
+            <Label2 className="text-xl font-bold" htmlFor="Slider1">
+              Adjust Data Frequency
+            </Label2>
           </div>
-          <Slider id="Slider1" defaultValue={[0.2]} min={0.2} max={1} step={0.2} onValueChange={handleSlider1Change}/>
-          <div className="">
-            {refreshTime}s
-          </div>
+          <Slider
+            id="Slider1"
+            defaultValue={[0.2]}
+            min={0.2}
+            max={1}
+            step={0.2}
+            onValueChange={handleSlider1Change}
+          />
+          <div className="">{refreshTime}s</div>
         </div>
         <div className="mx-10 p-4 w-1/2">
           <div className="mb-10">
-            <Label2 className="text-xl font-bold" htmlFor="Slider2">Adjust Data Range</Label2>
+            <Label2 className="text-xl font-bold" htmlFor="Slider2">
+              Adjust Data Range
+            </Label2>
           </div>
-          <Slider id="Slider2" defaultValue={[1]} min={1} max={75} step={5} onValueChange={handleSlider2Change}/>
-          <div className="">
-            {rangeTime}s
-          </div>
-        </div>
-        <div>
-
+          <Slider
+            id="Slider2"
+            defaultValue={[1]}
+            min={1}
+            max={75}
+            step={5}
+            onValueChange={handleSlider2Change}
+          />
+          <div className="">{rangeTime}s</div>
         </div>
       </div>
       <div className="chart-wrapper mb-40">
@@ -212,18 +220,24 @@ const App: React.FC = () => {
           {thermKeys.map((thermKey, index) => (
             <div key={thermKey} className="chart-item">
               <h2>{thermKey}</h2>
-              <LineChart width={300} height={300} data={displayData}>
+              <LineChart width={450} height={300} data={displayData}>
                 <Line type="monotone" dataKey={thermKey} stroke="#8884d8" />
                 <CartesianGrid stroke="#ccc" />
                 <XAxis
                   dataKey="TIMESTAMP"
-                  tickFormatter={(tick) => new Date(tick).toLocaleTimeString()}
+                  tickFormatter={(tick) => {
+                    const now = new Date().getTime();
+                    const tickTime = new Date(tick).getTime();
+                    return `${((now - tickTime) / 1000).toFixed(1)}s ago`;
+                  }}
                 />
                 <YAxis />
                 <Tooltip
-                  labelFormatter={(label) =>
-                    new Date(label).toLocaleTimeString()
-                  }
+                  labelFormatter={(label) => {
+                    const now = new Date().getTime();
+                    const labelTime = new Date(label).getTime();
+                    return `${((now - labelTime) / 1000).toFixed(1)}s ago`;
+                  }}
                 />
                 <Legend content={renderCustomLegend} />
                 {getReferenceAreas(displayData, heaterKeys[index]).map(
