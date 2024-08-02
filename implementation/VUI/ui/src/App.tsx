@@ -8,11 +8,14 @@ import {
   Tooltip,
   Legend,
   ReferenceArea,
+  Label,
 } from "recharts";
 import "./App.css";
 import Footer from "./Footer";
 import Toast from "./error_log"; // Ensure the path is correct
 import { Slider } from "./components/ui/slider";
+import { Label2 }  from "@/components/ui/label"
+
 
 interface DataPoint {
   THERM_01: number;
@@ -34,6 +37,8 @@ const App: React.FC = () => {
   const [errorLogs, setErrorLogs] = useState<string[]>([]);
   const [isSidePanelVisible, setIsSidePanelVisible] = useState<boolean>(false);
   const [currentError, setCurrentError] = useState<string | null>(null);
+  const [refreshTime, setRefreshTime] = useState<number>(0.2);
+  const [rangeTime, setRangeTime] = useState<number>(1);
   const incomingData = useRef<DataPoint[]>([]);
   const ws = useRef<WebSocket | null>(null);
 
@@ -110,15 +115,15 @@ const App: React.FC = () => {
   useEffect(() => {
     const updateDisplayData = () => {
       const now = new Date().getTime();
-      const oneSecondAgo = now - 1000;
+      const timeWindow = now - (rangeTime * 1000);
 
       setDisplayData((prevDisplayData) => {
         const newDisplayData = [
           ...prevDisplayData.filter(
-            (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
+            (d) => new Date(d.TIMESTAMP).getTime() > timeWindow
           ),
           ...incomingData.current.filter(
-            (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
+            (d) => new Date(d.TIMESTAMP).getTime() > timeWindow
           ),
         ];
         console.log("Display data updated:", newDisplayData);
@@ -167,12 +172,40 @@ const App: React.FC = () => {
     "HTR_04",
   ];
 
+  const handleSlider1Change = (value) => {
+    ws.current?.send(value)
+    setRefreshTime(value)
+  }
+  const handleSlider2Change = (value) => {
+    setRangeTime(value)
+  }
+
   return (
     <>
       <h1 className="my-10 text-4xl font-bold">Temperature Data Charts</h1>
 
-      <div className="my-10 p-4 w-full">
-        <Slider defaultValue={[33]} max={100} step={1} />
+      <div className="my-10 p-4 w-full flex">
+        <div className="mx-10 p-4 w-1/2">
+          <div className="mb-10">
+            <Label2 className="text-xl font-bold" htmlFor="Slider1">Adjust Data Frequency</Label2>
+          </div>
+          <Slider id="Slider1" defaultValue={[0.2]} min={0.2} max={1} step={0.2} onValueChange={handleSlider1Change}/>
+          <div className="">
+            {refreshTime}s
+          </div>
+        </div>
+        <div className="mx-10 p-4 w-1/2">
+          <div className="mb-10">
+            <Label2 className="text-xl font-bold" htmlFor="Slider2">Adjust Data Range</Label2>
+          </div>
+          <Slider id="Slider2" defaultValue={[1]} min={1} max={75} step={5} onValueChange={handleSlider2Change}/>
+          <div className="">
+            {rangeTime}s
+          </div>
+        </div>
+        <div>
+
+        </div>
       </div>
       <div className="chart-wrapper mb-40">
         <div className="chart-container">
