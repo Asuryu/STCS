@@ -172,6 +172,7 @@ void *control_loop()
         // Write Response
         sprintf(buffer, "%d;%d;%d;%d", response[0], response[1], response[2], response[3]);
         write(fd_response_pipe, buffer, 8);
+        printf("Sent: %s\n", buffer);
         sleep(1 / frequency);
     }
 
