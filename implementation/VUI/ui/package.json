@@ -10,13 +10,21 @@
         "preview": "vite preview"
     },
     "dependencies": {
-        "react-icons": "^5.2.1",
+        "@radix-ui/react-slider": "^1.2.0",
+        "class-variance-authority": "^0.7.0",
+        "clsx": "^2.1.1",
+        "lucide-react": "^0.420.0",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
+        "react-icons": "^5.2.1",
         "react-toastify": "^10.0.5",
-        "recharts": "^2.12.7"
+        "recharts": "^2.12.7",
+        "rollup": "^4.19.2",
+        "tailwind-merge": "^2.4.0",
+        "tailwindcss-animate": "^1.0.7"
     },
     "devDependencies": {
+        "@types/node": "^22.0.3",
         "@types/react": "^18.3.3",
         "@types/react-dom": "^18.3.0",
         "@typescript-eslint/eslint-plugin": "^7.15.0",

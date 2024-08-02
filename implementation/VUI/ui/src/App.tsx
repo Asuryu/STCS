@@ -11,7 +11,8 @@ import {
 } from "recharts";
 import "./App.css";
 import Footer from "./Footer";
-import Toast from './error_log'; // Ensure the path is correct
+import Toast from "./error_log"; // Ensure the path is correct
+import { Slider } from "./components/ui/slider";
 
 interface DataPoint {
   THERM_01: number;
@@ -67,10 +68,16 @@ const App: React.FC = () => {
 
         // Check for errors and update currentError and errorLogs
         if (newData.ERROR) {
-          setCurrentError(`Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${newData.ERROR}`);
+          setCurrentError(
+            `Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${
+              newData.ERROR
+            }`
+          );
           setErrorLogs((prevLogs) => [
             ...prevLogs,
-            `Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${newData.ERROR}`
+            `Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${
+              newData.ERROR
+            }`,
           ]);
         } else {
           setCurrentError(null);
@@ -108,10 +115,10 @@ const App: React.FC = () => {
       setDisplayData((prevDisplayData) => {
         const newDisplayData = [
           ...prevDisplayData.filter(
-              (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
+            (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
           ),
           ...incomingData.current.filter(
-              (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
+            (d) => new Date(d.TIMESTAMP).getTime() > oneSecondAgo
           ),
         ];
         console.log("Display data updated:", newDisplayData);
@@ -162,7 +169,11 @@ const App: React.FC = () => {
 
   return (
     <>
-      <h1 className="mb-10">Temperature Data Charts</h1>
+      <h1 className="my-10 text-4xl font-bold">Temperature Data Charts</h1>
+
+      <div className="my-10 p-4 w-full">
+        <Slider defaultValue={[33]} max={100} step={1} />
+      </div>
       <div className="chart-wrapper mb-40">
         <div className="chart-container">
           {thermKeys.map((thermKey, index) => (
@@ -173,9 +184,7 @@ const App: React.FC = () => {
                 <CartesianGrid stroke="#ccc" />
                 <XAxis
                   dataKey="TIMESTAMP"
-                  tickFormatter={(tick) =>
-                    new Date(tick).toLocaleTimeString()
-                  }
+                  tickFormatter={(tick) => new Date(tick).toLocaleTimeString()}
                 />
                 <YAxis />
                 <Tooltip
@@ -204,32 +213,35 @@ const App: React.FC = () => {
 
       {/* Conditional Toast Rendering */}
       {!isSidePanelVisible && currentError && (
-            <Toast
-                message={currentError}
-                onClose={() => setCurrentError(null)}
-                onClick={() => setIsSidePanelVisible(true)} // Show side panel on click
-            />
-        )}
+        <Toast
+          message={currentError}
+          onClose={() => setCurrentError(null)}
+          onClick={() => setIsSidePanelVisible(true)} // Show side panel on click
+        />
+      )}
 
-        {/* Side Panel */}
-        {isSidePanelVisible && (
-            <div className="fixed top-0 right-0 h-full w-80 bg-gray-800 text-white p-4 shadow-lg z-40 overflow-y-auto">
-              <h2 className="text-lg font-semibold mb-4">Error Log</h2>
-              <button
-                  className="mb-4 bg-red-600 text-white px-4 py-2 rounded"
-                  onClick={() => setIsSidePanelVisible(false)}
-              >
-                Close
-              </button>
-              <ul className="space-y-2">
-                {errorLogs.slice().reverse().map((log, index) => (
-                    <li key={index} className="border-b border-gray-600 pb-2">
-                      {log}
-                    </li>
-                ))}
-              </ul>
-            </div>
-        )}
+      {/* Side Panel */}
+      {isSidePanelVisible && (
+        <div className="fixed top-0 right-0 h-full w-80 bg-gray-800 text-white p-4 shadow-lg z-40 overflow-y-auto">
+          <h2 className="text-lg font-semibold mb-4">Error Log</h2>
+          <button
+            className="mb-4 bg-red-600 text-white px-4 py-2 rounded"
+            onClick={() => setIsSidePanelVisible(false)}
+          >
+            Close
+          </button>
+          <ul className="space-y-2">
+            {errorLogs
+              .slice()
+              .reverse()
+              .map((log, index) => (
+                <li key={index} className="border-b border-gray-600 pb-2">
+                  {log}
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
     </>
   );
 };
