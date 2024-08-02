@@ -67,7 +67,7 @@ void setHeaterState(struct ThermalPair *TP_block, int *heater_state){
 }
 
 
-// Function to update temperatures based on the state -> 1: Normal    2: Eclipse    3: Sun Exposure  
+// Function to update temperatures based on Heater Status (ON/OFF) and the state -> 1: Normal    2: Eclipse    3: Sun Exposure  
 int modify_temperatures(struct ThermalPair* TP_block, int state){
     
     switch (state) {
@@ -95,6 +95,7 @@ int modify_temperatures(struct ThermalPair* TP_block, int state){
             TP_block->thermistor -= 1;
         }
         break;
+    // Throws ERROR value: Unknown state
     default:
         return -1;
         break;

@@ -29,7 +29,7 @@
 typedef enum {false, true} bool;
 
 typedef struct ThermalPair {
-    int heater;
+    int heater; //  ON/OFF
     double thermistor;
 } ThermalPair;
 
