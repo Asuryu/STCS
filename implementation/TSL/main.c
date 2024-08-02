@@ -39,8 +39,19 @@ void handle_error(char *error) {
 
 
 
-// Function verify the clock period and define the state
 void verify_periods(struct TSL_data *tsl) {
+
+    /**
+     * @brief Verifies and sets the period based on the 8 lower bits of the clock.
+     
+    * This function checks the lower 8 bits of the clock, of the
+    * TSL_data structure, and sets the period accordingly.
+    
+    * @param tsl Pointer to the TSL_data structure whose clock's lower bits will be verified.
+    
+    * @return void
+    */
+
     int8_t lowerBits = tsl->clock & 0x00FF;
  
     if (lowerBits <= 0x1F || lowerBits >= 0x60) {
@@ -57,9 +68,17 @@ void verify_periods(struct TSL_data *tsl) {
 
 
 
-
-// Function to turn ON/OFF each Heater
 void setHeaterState(struct ThermalPair *TP_block, int *heater_state){
+
+    /**
+     * @brief This function will turn ON/OFF each Heater. Updates each heater in ThermalPair according to states in heater_state
+     
+    * @param TP_block thermalPair matrix 
+    * @param heater_state array of integers representing the heater's current states (heater_state)
+    
+    * @return void
+    */
+
     TP_block[0].heater = heater_state[0];
     TP_block[1].heater = heater_state[1];
     TP_block[2].heater = heater_state[2];
@@ -67,8 +86,18 @@ void setHeaterState(struct ThermalPair *TP_block, int *heater_state){
 }
 
 
-// Function to update temperatures based on the state -> 1: Normal    2: Eclipse    3: Sun Exposure  
+
 int modify_temperatures(struct ThermalPair* TP_block, int state){
+
+    /**
+    * @brief This function will update the thermistor temperatures based on Heater Status (ON/OFF) and the state
+    * -> 1: Normal  -> 2: Eclipse  -> 3: Sun Exposure
+     
+    * @param TP_block thermalPair matrix 
+    * @param state array of integers representing the heater's current states (heater_state)
+    
+    * @return int: 0 if successful, -1 otherwise
+    */
     
     switch (state) {
     case NORMAL:
@@ -96,6 +125,7 @@ int modify_temperatures(struct ThermalPair* TP_block, int state){
         }
         break;
     default:
+    // Throws ERROR value: Unknown state
         return -1;
         break;
     }
@@ -104,7 +134,18 @@ int modify_temperatures(struct ThermalPair* TP_block, int state){
 }
 
 
+ 
 const char * get_timestamp() {
+
+    /**
+    * @brief This function will determinate the current time in the correct format (example: "2024-08-02T15:04:05").
+    * First gets the current time in seconds (current_time) and calculates the milliseconds (milliseconds).
+    * Then formats the local time into a string (time_string) and combines the formatted time_string with milliseconds into the final_string.
+     
+    * @param void
+    
+    * @return char: A pointer to a dynamically allocated string containing the formatted timestamp with milliseconds - final_string
+    */
     
     time_t current_time = time(NULL);
     struct tm *local_time = localtime(&current_time);
@@ -246,6 +287,8 @@ void write_temp_info_pipe(char* message) {
 }
 
 int main() {
+
+    // Variables for writing the csv file 
     char *data;
     const char *filename = "data.csv";
     const char *header = "THERM-01, THERM-02, THERM-03, THERM-04, HTR-1, HTR-2, HTR-3, HTR-4, TIMESTAMP, ENVIRONMENT, ERROR";
@@ -309,19 +352,21 @@ int main() {
     }
 
     // Initialize the Heaters Sstate and the Thermistors temperature
+    // the Heaters start in OFF state and the temperature is a random number between -5 and 7
     struct ThermalPair pair_array[4] = {
-        {false, rand() % 13 - 5},    // random between -5 and 7
+        {false, rand() % 13 - 5},    
         {false, rand() % 13 - 5},
         {false, rand() % 13 - 5},
         {false, rand() % 13 - 5}
     };
 
+    // Create an array for pass the heaters state for the thread 
+    int new_heater_states[4] = {0,0,0,0};
+
+    // Create and inicialize a struct for the clock and for the period 
     struct TSL_data tsl;
     TSL_init(&tsl);
 
-    // Auxiliar for Now
-
-    int new_heater_states[4] = {0,0,0,0};
 
     pthread_t thread;
     ThreadArgs thread_args = {fd_response_pipe, new_heater_states};
@@ -332,8 +377,10 @@ int main() {
         return 1;
     }
 
+    // Cicle for the continuous process
     while(!sigint_received){
-        usleep(200 * 1000); // 200ms
+        // Put the program to sleep for 200ms
+        usleep(200 * 1000);
 
         // Verify Periods
         verify_periods(&tsl);
@@ -350,16 +397,14 @@ int main() {
             printf("Heater: %d, Thermistor: %f\n", pair_array[i].heater, pair_array[i].thermistor);
         }
         
-        
-
-         // 1 -> Normal 
-         // 2 -> 
-        
+        // Update thermistors temperature
         for(int i=0; i<4; i++){
             if(modify_temperatures(&pair_array[i], tsl.period) == -1){
-                writeToCSVError(filename, header, "setTemperature ERROR: Unknown state", get_timestamp());
+                writeToCSVError(filename, header, "Temperature error", get_timestamp());
             }
         } 
+
+
         char message[100];
         //{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE}
         sprintf(message, "%d;%f-%d;%f-%d;%f-%d;%f-%d", 
@@ -372,6 +417,8 @@ int main() {
         write_temp_info_pipe(message);
 
         data = buildData(pair_array, get_timestamp(), tsl.period); 
+
+        // Write info about heaters state and thermistors temperature to the CSV file
         writeToCSVCorrect(filename, header, data);
 
         tsl.clock++;        

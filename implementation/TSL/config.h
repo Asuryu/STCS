@@ -28,6 +28,7 @@
 
 typedef enum {false, true} bool;
 
+// Assigns each Thermistor to a Heater
 typedef struct ThermalPair {
     int heater;
     double thermistor;
