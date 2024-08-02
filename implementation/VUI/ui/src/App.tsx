@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import "./App.css";
 import Footer from "./Footer";
+import { Slider } from "./components/ui/slider";
 
 interface DataPoint {
   THERM_01: number;
@@ -57,7 +58,7 @@ const App: React.FC = () => {
           ENVIRONMENT: parsedData[9],
         };
         incomingData.current.push(newData);
-        setLastData(newData)
+        setLastData(newData);
       } catch (error) {
         console.error("Error parsing message data:", error);
       }
@@ -148,6 +149,10 @@ const App: React.FC = () => {
   return (
     <>
       <h1 className="mb-10">Temperature Data Charts</h1>
+      <div className="my-20 w-full">
+        <Slider defaultValue={[33]} max={100} step={1} />
+      </div>
+
       <div className="chart-wrapper mb-40">
         <div className="chart-container">
           {thermKeys.map((thermKey, index) => (
@@ -158,9 +163,7 @@ const App: React.FC = () => {
                 <CartesianGrid stroke="#ccc" />
                 <XAxis
                   dataKey="TIMESTAMP"
-                  tickFormatter={(tick) =>
-                    new Date(tick).toLocaleTimeString()
-                  }
+                  tickFormatter={(tick) => new Date(tick).toLocaleTimeString()}
                 />
                 <YAxis />
                 <Tooltip
