@@ -4,7 +4,6 @@ struct sigaction sa;
 volatile sig_atomic_t sigint_received = 0;
 pthread_t thread;
 
-// Functions and variables for Pipe
 int fd_temp_info_pipe, fd_response_pipe;
 
 // Function to initialize clock and period
@@ -13,13 +12,28 @@ void TSL_init(struct TSL_data *tsl){
     tsl->period = NORMAL;
 }
 
-// Signal handler for SIGINT
 void sigint_handler() {
+    /* 
+
+    * This function will set the sigint_received variable to 1 when a SIGINT signal is received.
+
+    Args: void
+    Returns: void
+
+    */
     printf("SIGINT received\n");
     sigint_received = 1;
 }
 
 int cleanup() {
+    /*
+
+    * This function will close the file descriptors and unlink the named pipes.
+
+    Args: void
+    Returns: 0 if successful, -1 if an error occurred
+
+    */
 
     pthread_join(thread, NULL);
     while (wait(NULL) != -1){
@@ -28,10 +42,21 @@ int cleanup() {
     close(fd_temp_info_pipe);
     close(fd_response_pipe);
 
+    unlink(TEMP_INFO_PIPE);
+    unlink(RESPONSE_PIPE);
+
     return 0;
 }
 
 void handle_error(char *error) {
+    /*
+
+    * This function will print the error message and call the cleanup function.
+
+    Args: error (char*): The error message to be printed
+    Returns: void
+    
+    */
     perror(error);
     cleanup();
     exit(0);
@@ -206,6 +231,14 @@ void writeToCSVError(const char *filename, const char *header, char *error, cons
 int fd_temp_info_pipe, fd_response_pipe;
 
 void* read_response_thread(void* args) {
+    /*
+
+    * This function will read the response from the pipe and update the new_heater_states array.
+
+    Args: args (void*): The arguments passed to the thread
+    Returns: NULL
+
+    */
 
     struct sigaction sigint_action;
 	sigint_action.sa_handler = sigint_handler;
@@ -251,6 +284,7 @@ int main() {
     const char *header = "THERM-01, THERM-02, THERM-03, THERM-04, HTR-1, HTR-2, HTR-3, HTR-4, TIMESTAMP, ENVIRONMENT, ERROR";
 
 
+    // Signal handler for SIGINT (Ctrl+C)
     struct sigaction sigint_action;
 	sigint_action.sa_handler = sigint_handler;
 	sigemptyset(&sigint_action.sa_mask);
@@ -263,8 +297,7 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 
-    // printf("TSL started\n");
-
+    // Create the named pipes
     if((mkfifo(TEMP_INFO_PIPE,O_CREAT|O_EXCL|0600)<0) 
             && (errno != EEXIST)){
 		
@@ -273,11 +306,8 @@ int main() {
 
         handle_error(error_msg); 
 		exit(0);
-	}
 
-    // printf("TSL created temp_info_pipe\n");
-
-    if((mkfifo(RESPONSE_PIPE,O_CREAT|O_EXCL|0600)<0) 
+	}if((mkfifo(RESPONSE_PIPE,O_CREAT|O_EXCL|0600)<0) 
             && (errno != EEXIST)){
         
         char *error_msg = "ERROR CREATING RESPONSE NAMED PIPE";
@@ -287,8 +317,7 @@ int main() {
 		exit(0);
     }
 
-    // printf("TSL created response_pipe\n");
-
+    // Open the named pipes
     if ((fd_temp_info_pipe = open(TEMP_INFO_PIPE, O_RDWR)) < 0) {
         
         char *error_msg = "ERROR OPENING SENSOR NAMED PIPE";
@@ -296,10 +325,8 @@ int main() {
 
         handle_error(error_msg); 
         exit(0);
-    }
-    // printf("TSL opened temp_info_pipe\n");
 
-    if ((fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0) {
+    }if ((fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0) {
         
         char *error_msg = "ERROR OPENING CONSOLE NAMED PIPE";
         writeToCSVError(filename, header, error_msg, get_timestamp());
@@ -319,14 +346,12 @@ int main() {
     struct TSL_data tsl;
     TSL_init(&tsl);
 
-    // Auxiliar for Now
-
     int new_heater_states[4] = {0,0,0,0};
 
+
+    // Create the thread to read the response from the pipe and update the new_heater_states array
     pthread_t thread;
     ThreadArgs thread_args = {fd_response_pipe, new_heater_states};
-
-
     if (pthread_create(&thread, NULL, read_response_thread, &thread_args) != 0) {
         handle_error("Failed to create thread");
         return 1;
@@ -360,16 +385,18 @@ int main() {
                 writeToCSVError(filename, header, "setTemperature ERROR: Unknown state", get_timestamp());
             }
         } 
-        char message[100];
+
+        // Write to the pipe the temperatures and states
         //{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE};{TEMP}-{STATE}
+        char message[100];
         sprintf(message, "%d;%f-%d;%f-%d;%f-%d;%f-%d", 
                     tsl.clock,
                     pair_array[0].thermistor, pair_array[0].heater, 
                     pair_array[1].thermistor, pair_array[1].heater, 
                     pair_array[2].thermistor, pair_array[2].heater, 
                     pair_array[3].thermistor, pair_array[3].heater);
-
         write_temp_info_pipe(message);
+
 
         data = buildData(pair_array, get_timestamp(), tsl.period); 
         writeToCSVCorrect(filename, header, data);
