@@ -12,28 +12,27 @@ void TSL_init(struct TSL_data *tsl){
     tsl->period = NORMAL;
 }
 
-void sigint_handler() {
-    /* 
+void sigint_handler() {/** 
+    *@brief SIGINT handler function
 
     * This function will set the sigint_received variable to 1 when a SIGINT signal is received.
 
-    Args: void
-    Returns: void
+    *@param void 
+    *@return void
+    **/
 
-    */
     printf("SIGINT received\n");
     sigint_received = 1;
 }
 
-int cleanup() {
-    /*
+int cleanup() {/**
+    * @brief Cleanup function
 
     * This function will close the file descriptors and unlink the named pipes.
 
-    Args: void
-    Returns: 0 if successful, -1 if an error occurred
-
-    */
+    * @param void
+    * @return int: 0 if successful, -1 otherwise
+    **/
 
     pthread_join(thread, NULL);
     while (wait(NULL) != -1){
@@ -48,15 +47,15 @@ int cleanup() {
     return 0;
 }
 
-void handle_error(char *error) {
-    /*
-
+void handle_error(char *error) {/** 
+    * @brief Handle error function
+    
     * This function will print the error message and call the cleanup function.
 
-    Args: error (char*): The error message to be printed
-    Returns: void
-    
-    */
+    * @param error (char*): The error message to be printed
+    * @return void    
+    **/
+
     perror(error);
     cleanup();
     exit(0);
@@ -230,14 +229,13 @@ void writeToCSVError(const char *filename, const char *header, char *error, cons
 // Functions and variables for Pipe
 int fd_temp_info_pipe, fd_response_pipe;
 
-void* read_response_thread(void* args) {
-    /*
+void* read_response_thread(void* args) {/**
+    * @brief Read response thread function
 
-    * This function will read the response from the pipe and update the new_heater_states array.
+    * This thread will read the response from the pipe and update the new_heater_states array.
 
-    Args: args (void*): The arguments passed to the thread
-    Returns: NULL
-
+    * @param args (void*): The arguments for the thread
+    * @return void*
     */
 
     struct sigaction sigint_action;
