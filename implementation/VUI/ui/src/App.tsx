@@ -70,7 +70,7 @@ const App: React.FC = () => {
         setLastData(newData);
 
         // Check for errors and update currentError and errorLogs
-        if (newData.ERROR) {
+        if (newData.ERROR && newData.ERROR != "null") {
           setCurrentError(
             `Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${
               newData.ERROR
