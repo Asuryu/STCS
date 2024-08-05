@@ -47,10 +47,10 @@ This project consists of a WebSocket-based real-time data visualization applicat
    Replace `frontend_directory` with the actual path to your frontend project.
 
 3. **Run the React Application**:
-   Start the React application, which will connect to the WebSocket server and display the data.
+   Start the React application, making sure the server is running.
 
    ```bash
-   npm start
+   npm run dev
    ```
 
    This command will run the application on [http://localhost:8083](http://localhost:8083) by default.
