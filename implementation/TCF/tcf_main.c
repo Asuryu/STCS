@@ -293,6 +293,7 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
+
     if(createPipes() == -1) return -1;
     if (pthread_mutex_init(&frequencyMutex, NULL) != 0) { 
         printf("Mutex initialization has failed\n"); 
@@ -318,9 +319,6 @@ int main(int argc, char **argv)
         temps[i++][0] = NAN;
 
     PipeData pd;
-
-    if (enableTCF(&pidThread, &pd) == -1)
-        return -1;
 
     ui();
 
