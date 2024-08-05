@@ -30,10 +30,10 @@ void pid(float received_temp[4], float integral_PID[4], float initial_temp[4], f
 
     //Constant Definition
     N = 8; //Undefined Constant, typical values vary between 8 and 20
-    K = 0.25; //Proportional Constant
-    T_i = 10; //Integration Time Constant
-    T_d = 5;  //Derivative Time Constant
-    b = 0.5;  //Second Porporcional Constant    
+    K = KP; //Proportional Constant
+    T_i = KI; //Integration Time Constant
+    T_d = KD;  //Derivative Time Constant
+    b = 1;  //Second Porporcional Constant, changed to 1 to avoid constraints with the definition of K_i, K_p and K_d    
 
     //Definir o erro
     for(int j = 0; j < 4; j++){ 

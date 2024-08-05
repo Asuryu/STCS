@@ -43,5 +43,6 @@ int createPipes();
 int writeToPipe(int fd, char* buf);
 void * control_loop(void * pdata) ;
 void setFrequency(int newFreq);
+void ui();
 
 #endif // TCF_MAIN_H

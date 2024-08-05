@@ -1,6 +1,9 @@
 #ifndef PID_H
 #define PID_H
 
+#define KP 0.5
+#define KI 10
+#define KD 5
 
 //t_in -> received_temp
 //i -> inetegral_PID
