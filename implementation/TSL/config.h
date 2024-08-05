@@ -16,10 +16,7 @@
 #include <sys/time.h>
 #include <sys/select.h>
 
-
-// Define response informations for pipe
-#define TEMP_INFO_PIPE "/tmp/temp_info_pipe"
-#define RESPONSE_PIPE "/tmp/response_pipe"
+#include "../TCF_TSL/config.h"
 
 // Define states and Bool Type
 #define NORMAL 1

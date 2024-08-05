@@ -96,11 +96,6 @@ int enableTCF(pthread_t *pidThread, PipeData* pd)
     return pthread_create(pidThread, NULL, &control_loop, pd) != 0 ? -1 : 0;
 }
 
-{
-    enabled = 1;
-    return pthread_create(pidThread, NULL, &control_loop, NULL) != 0 ? -1 : 0;
-}
-
 void disableTCF(pthread_t *pidThread, PipeData *pd)
 {
     enabled = 0;
@@ -141,9 +136,9 @@ int openPipes(PipeData *pd){
     return 0;
 }
 
-int closePipes(PipeData *pd){
-    fclose(pd->fd_response_pipe);
-    fclose(pd->fd_temp_info_pipe);
+void closePipes(PipeData *pd){
+    close(pd->fd_response_pipe);
+    close(pd->fd_temp_info_pipe);
 }
 
 int createPipes(){
@@ -165,11 +160,12 @@ void * control_loop(void * pdata)
 {
     PipeData *pd = (PipeData*) pdata;
 
-    if(openPipes(pd) == -1) return -1;
+    if(openPipes(pd) == -1) return NULL;
 
     char buffer[1024];
     ssize_t bytes_read;
     float temp_values[N_HEATERS];
+    int state_values[N_HEATERS];
     int response[4];
     float integral[] = {0, 0, 0, 0};
     float derivative[] = {0, 0, 0, 0}; 
@@ -181,11 +177,10 @@ void * control_loop(void * pdata)
     while (enabled)
     {
         //Read Temperatures
-        bytes_read = read(pd->fd_temp_info_pipe, temps, sizeof(buffer) - 1);
+        bytes_read = read(pd->fd_temp_info_pipe, buffer, sizeof(buffer) - 1);
         if (bytes_read > 0){
             buffer[bytes_read] = '\0';
-            sscanf(buffer, TEMPS_SINTAX, &index, &temp_values[0], &temp_values[1], &temp_values[2], &temp_values[3]);
-            
+            sscanf(buffer, TEMPS_SINTAX, &index, &temp_values[0], &state_values[0], &temp_values[1], &state_values[1], &temp_values[2], &state_values[2], &temp_values[3], &state_values[3]);            
             if(index == lastRegIndex) continue;
             
             lastRegIndex = index;
