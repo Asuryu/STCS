@@ -16,3 +16,6 @@ $(TARGET2): $(SRC2) $(HEADER)
 
 clean:
 	rm -f $(TARGET) $(TARGET2)
+
+run: $(TARGET)
+	./$(TARGET)
