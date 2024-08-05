@@ -229,16 +229,18 @@ void userSetSetpoints()
     float sp, sps[4];
     printf("1. Change all setpoints\n2. Change all setpoints to one value \n3. Change one setpoint\n");
     scanf("%d", &choice);
+    
     switch (choice)
     {
     case 1:
+        printf("Current setpoints: %f, %f, %f, %f.\n", set_point[0], set_point[1], set_point[2], set_point[3]);
         printf("Setpoints sintax: {sp},{sp},{sp},{sp}\n");
         scanf("%f,%f,%f,%f", &sps[0], &sps[1], &sps[2], &sps[3]);
 
         setSetPoints(sps);
         break;
     case 2:
-        printf("Desired setpoint:\n");
+        printf("Current setpoints: %f, %f, %f, %f. Desired setpoint:\n", set_point[0], set_point[1], set_point[2], set_point[3]);
         scanf("%f", &sp);
 
         setAllSetPoints(sp);
@@ -246,8 +248,12 @@ void userSetSetpoints()
     case 3:
         printf("Desired index [0-%d]:\n", N_HEATERS);
         scanf("%d", &idx);
+        if(idx < 0 && idx >=  N_HEATERS){
+            printf("Invalid index.\n");
+            return;
+        }
 
-        printf("Desired setpoint:\n");
+        printf("Current setpoint: %f. Desired setpoint:\n", set_point[idx]);
         scanf("%f", &sp);
 
         setSetPoint(sp, idx);
@@ -263,7 +269,7 @@ void ui(pthread_t *pidThread, PipeData *pd)
     int choice = -1, aux;
     while (1)
     {
-        printf("Thermal Control Function\n");
+        printf("\nThermal Control Function\n");
         enabled == 1 ? printf("1. Disable\n") : printf("1. Enable\n");
         printf("2. Change frequency\n3. Change setpoint\n4. Exit\n");
 
@@ -272,16 +278,14 @@ void ui(pthread_t *pidThread, PipeData *pd)
         {
         case 1:
             if (enabled == 0)
-            {
                 enableTCF(pidThread, pd);
-            }
             else
-            {
                 disableTCF(pidThread, pd);
-            }
             break;
         case 2:
-            printf("Desired frequency: [1-5]\n");
+            pthread_mutex_lock(&frequencyMutex);
+            printf("Current frequency: %dHz. Desired frequency: [1-5]\n", frequency);
+            pthread_mutex_unlock(&frequencyMutex);
             scanf("%d", &aux);
             setFrequency(aux);
             break;
