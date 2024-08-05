@@ -36,7 +36,7 @@ const App: React.FC = () => {
   const [isSidePanelVisible, setIsSidePanelVisible] = useState<boolean>(false);
   const [currentError, setCurrentError] = useState<string | null>(null);
   const [refreshTime, setRefreshTime] = useState<number>(0.2);
-  const [rangeTime, setRangeTime] = useState<number>(1);
+  const [rangeTime, setRangeTime] = useState<number>(5);
   const incomingData = useRef<DataPoint[]>([]);
   const ws = useRef<WebSocket | null>(null);
 
@@ -180,8 +180,12 @@ const App: React.FC = () => {
   return (
     <>
       <h1 className="my-10 text-4xl font-bold">Temperature Data Charts</h1>
-
-      <div className="my-10 p-4 w-full flex">
+      <button 
+        className="p-2 bg-red-600 text-white rounded"
+        onClick={() => setIsSidePanelVisible(!isSidePanelVisible)}>
+        Show Errors
+        </button>
+      <div className="mb-10 mt-1 p-4 w-full flex">
         <div className="mx-10 p-4 w-1/2">
           <div className="mb-10">
             <Label2 className="text-xl font-bold" htmlFor="Slider1">
@@ -206,7 +210,7 @@ const App: React.FC = () => {
           </div>
           <Slider
             id="Slider2"
-            defaultValue={[1]}
+            defaultValue={[5]}
             min={1}
             max={75}
             step={5}
@@ -266,7 +270,6 @@ const App: React.FC = () => {
           onClick={() => setIsSidePanelVisible(true)} // Show side panel on click
         />
       )}
-
       {/* Side Panel */}
       {isSidePanelVisible && (
         <div className="fixed top-0 right-0 h-full w-80 bg-gray-800 text-white p-4 shadow-lg z-40 overflow-y-auto">
