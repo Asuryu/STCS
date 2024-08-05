@@ -163,6 +163,7 @@ int writeToPipe(int fd, char* buf){
 
 void * control_loop(void * pdata)   
 {
+    printf("Control Loop\n");
     PipeData *pd = (PipeData*) pdata;
 
     if(openPipes(pd) == -1) return NULL;
@@ -201,7 +202,7 @@ void * control_loop(void * pdata)
 
         //Write Response
         sprintf(buffer, "%d;%d;%d;%d", response[0], response[1], response[2], response[3]);
-        buffer[strlen(buffer)-1] = '\0';
+        printf("RESPONSE: %s\n", buffer);
         if(writeToPipe(pd->fd_response_pipe, buffer) != 0) printf("ERROR WRITING TO PIPE.\n");
         sleep(step);
     }
