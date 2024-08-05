@@ -249,7 +249,7 @@ void userSetSetpoints(){
     }
 }
 
-void ui(){
+void ui(pthread_t *pidThread, PipeData *pd){
     int choice = -1, aux;
     while(1){
         printf("Thermal Control Function\n");
@@ -260,7 +260,7 @@ void ui(){
         switch (choice)
         {
         case 1:
-            enabled = enabled == 1 ? 0: 1;
+           enabled == 0 ? enableTCF(pidThread, pd): disableTCF(pidThread,pd);
             break;
         case 2:
             printf("Desired frequency: [1-5]\n");
@@ -320,7 +320,7 @@ int main(int argc, char **argv)
 
     PipeData pd;
 
-    ui();
+    ui(&pidThread, &pd);
 
     disableTCF(&pidThread, &pd);
     pthread_mutex_destroy(&frequencyMutex); 
