@@ -10,18 +10,18 @@ def get_latest_csv_line(file_path):
         reader = csv.reader(f)
         for last_line in reader:
             pass
-    return last_line
+        
+        return_list = []
+        
+        for item in last_line:
+            return_list.append(item.strip())
+    return return_list
 
 def validate_data(data):
     try:
         # Check the number of fields
         if len(data) != 11:
             return False
-
-        # Check temperatures
-        for i in range(4):
-            if not (-1000 <= int(data[i]) <= 1000):
-                return False
 
         # Check heater statuses
         for i in range(4, 8):
@@ -36,7 +36,7 @@ def validate_data(data):
             return False
 
         # Check error status
-        if data[10] not in ["", "Sensor Error", "Heater Failure"]:
+        if data[10] not in ["null", "Sensor Error", "Heater Failure"]:
             return False
 
         return True
@@ -71,6 +71,7 @@ async def handle_client(websocket, path, file_path):
         while True:
             data = get_latest_csv_line(file_path)
             if data:
+                print(data)
                 if validate_data(data):
                     await websocket.send(str(data))
                 else:
@@ -89,5 +90,5 @@ async def server_program(file_path):
     await server.wait_closed()
 
 if __name__ == "__main__":
-    file_path = './data.csv'
+    file_path = '../../TSL/data.csv'
     asyncio.run(server_program(file_path))
