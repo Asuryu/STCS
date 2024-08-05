@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -pedantic -std=c99 -pthread
-TARGET = prog
-TARGET2 = pipetest
+TARGET = prog.o
+TARGET2 = pipetest.o
 SRC = main.c
 SRC2 = pipetest.c
 HEADER = config.h
