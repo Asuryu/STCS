@@ -228,6 +228,7 @@ void userSetSetpoints()
     int choice = -1, idx;
     float sp, sps[4];
     printf("1. Change all setpoints\n2. Change all setpoints to one value \n3. Change one setpoint\n");
+    scanf("%d", &choice);
     switch (choice)
     {
     case 1:
