@@ -227,9 +227,9 @@ void userSetSetpoints()
 {
     int choice = -1, idx;
     float sp, sps[4];
-    printf("1. Change all setpoints\n2. Change all setpoints to one value \n3. Change one setpoint\n");
+    printf("\nSetpoint changes\n1. Change all setpoints\n2. Change all setpoints to one value \n3. Change one setpoint\n");
     scanf("%d", &choice);
-    
+
     switch (choice)
     {
     case 1:
@@ -271,7 +271,7 @@ void ui(pthread_t *pidThread, PipeData *pd)
     {
         printf("\nThermal Control Function\n");
         enabled == 1 ? printf("1. Disable\n") : printf("1. Enable\n");
-        printf("2. Change frequency\n3. Change setpoint\n4. Exit\n");
+        printf("2. Change frequency\n3. Change setpoint\n4. View current values\n5. Exit\n");
 
         scanf("%d", &choice);
         switch (choice)
@@ -293,6 +293,13 @@ void ui(pthread_t *pidThread, PipeData *pd)
             userSetSetpoints();
             break;
         case 4:
+            pthread_mutex_lock(&frequencyMutex);
+            pthread_mutex_lock(&spMutex);
+            printf("\nCurrent Values\nSetpoints: %f, %f, %f, %f. \nFrequency: %dHz.\n",set_point[0], set_point[1], set_point[2], set_point[3], frequency);
+            pthread_mutex_unlock(&frequencyMutex);
+            pthread_mutex_unlock(&spMutex);
+            break;
+        case 5:
             return;
         default:
             printf("Invalid choice.\n");
