@@ -9,7 +9,7 @@ pthread_mutex_t spMutex;
 int lastRegIndex;
 
 int frequency;
-pthread_mutex_t frequencyMutex; 
+pthread_mutex_t frequencyMutex;
 /* Set Temperatures Function
  * Inserts new temperature array in the last position of the LIFO history array, or the first empty one if it exists.
  *
@@ -91,7 +91,7 @@ float getThermisterTempsAt(int hist_index, int therm_index)
 }
 
 // try start thread (w/ enable set to 1)
-int enableTCF(pthread_t *pidThread, PipeData* pd)
+int enableTCF(pthread_t *pidThread, PipeData *pd)
 {
     enabled = 1;
     return pthread_create(pidThread, NULL, &control_loop, pd) != 0 ? -1 : 0;
@@ -101,20 +101,20 @@ void disableTCF(pthread_t *pidThread, PipeData *pd)
 {
     enabled = 0;
     pthread_join(*pidThread, NULL);
-    
-    openPipes(pd);
-    char *buffer = malloc(sizeof(char) * 8 +1);
-    sprintf(buffer, "%d;%d;%d;%d", 0,0,0,0);
-    buffer[strlen(buffer)-1] = '\0';
 
-    if(writeToPipe(pd->fd_response_pipe, buffer) != 0) printf("ERROR WRITING TO PIPE.\n");
+    openPipes(pd);
+    char *buffer = malloc(sizeof(char) * 8 + 1);
+    sprintf(buffer, "%d;%d;%d;%d", 0, 0, 0, 0);
+
+    if (writeToPipe(pd->fd_response_pipe, buffer) < 0)
+        printf("ERROR WRITING TO PIPE.\n");
     closePipes(pd);
 }
 
 void setSetPoint(float newSetPoint, int index)
 {
-    pthread_mutex_lock(&spMutex); 
-   
+    pthread_mutex_lock(&spMutex);
+
     set_point[index] = newSetPoint >= -20 && newSetPoint <= 20 ? newSetPoint : set_point[index];
 
     pthread_mutex_unlock(&spMutex);
@@ -122,17 +122,18 @@ void setSetPoint(float newSetPoint, int index)
 
 void setSetPoints(float newSetPoints[N_HEATERS])
 {
-    for(int i=0; i<N_HEATERS; i++)
-        setSetPoint(newSetPoints[i],i); 
+    for (int i = 0; i < N_HEATERS; i++)
+        setSetPoint(newSetPoints[i], i);
 }
 
 void setAllSetPoints(float newSetPoint)
 {
-    for(int i=0; i<N_HEATERS; i++)
-        setSetPoint(newSetPoint,i);
+    for (int i = 0; i < N_HEATERS; i++)
+        setSetPoint(newSetPoint, i);
 }
 
-int openPipes(PipeData *pd){
+int openPipes(PipeData *pd)
+{
     if ((pd->fd_temp_info_pipe = open(TEMP_INFO_PIPE, O_RDWR)) < 0 || (pd->fd_response_pipe = open(RESPONSE_PIPE, O_RDWR)) < 0)
     {
         perror("ERROR OPENING NAMED PIPES\n");
@@ -141,12 +142,14 @@ int openPipes(PipeData *pd){
     return 0;
 }
 
-void closePipes(PipeData *pd){
+void closePipes(PipeData *pd)
+{
     close(pd->fd_response_pipe);
     close(pd->fd_temp_info_pipe);
 }
 
-int createPipes(){
+int createPipes()
+{
     if (((mkfifo(TEMP_INFO_PIPE, O_CREAT | O_EXCL | 0600) < 0) && (errno != EEXIST)) || ((mkfifo(RESPONSE_PIPE, O_CREAT | O_EXCL | 0600) < 0) && (errno != EEXIST)))
     {
         perror("ERROR CREATING NAMED PIPES\n");
@@ -155,18 +158,18 @@ int createPipes(){
     return 0;
 }
 
-int writeToPipe(int fd, char* buf){
+int writeToPipe(int fd, char *buf)
+{
     return write(fd, buf, sizeof(buf));
 }
 
-
-
-void * control_loop(void * pdata)   
+void *control_loop(void *pdata)
 {
     printf("Control Loop\n");
-    PipeData *pd = (PipeData*) pdata;
+    PipeData *pd = (PipeData *)pdata;
 
-    if(openPipes(pd) == -1) return NULL;
+    if (openPipes(pd) == -1)
+        return NULL;
 
     char buffer[1024];
     ssize_t bytes_read;
@@ -174,51 +177,54 @@ void * control_loop(void * pdata)
     int state_values[N_HEATERS];
     int response[4];
     float integral[] = {0, 0, 0, 0};
-    float derivative[] = {0, 0, 0, 0}; 
-    float initial_temp[] = {0, 0, 0, 0}; 
-    pthread_mutex_lock(&frequencyMutex); 
-    float step = 1/ frequency;
+    float derivative[] = {0, 0, 0, 0};
+    float initial_temp[] = {0, 0, 0, 0};
+    pthread_mutex_lock(&frequencyMutex);
+    float step = 1 / frequency;
     pthread_mutex_unlock(&frequencyMutex);
     int index;
-    
 
     while (enabled)
     {
-        //Read Temperatures
+        // Read Temperatures
         bytes_read = read(pd->fd_temp_info_pipe, buffer, sizeof(buffer) - 1);
-        if (bytes_read > 0){
+        if (bytes_read > 0)
+        {
             buffer[bytes_read] = '\0';
-            sscanf(buffer, TEMPS_SINTAX, &index, &temp_values[0], &state_values[0], &temp_values[1], &state_values[1], &temp_values[2], &state_values[2], &temp_values[3], &state_values[3]);            
-            if(index == lastRegIndex) continue;
-            
+            sscanf(buffer, TEMPS_SINTAX, &index, &temp_values[0], &state_values[0], &temp_values[1], &state_values[1], &temp_values[2], &state_values[2], &temp_values[3], &state_values[3]);
+            if (index == lastRegIndex)
+                continue;
+
             lastRegIndex = index;
             setTemps(temp_values);
         }
 
-        //Control Function
-        pthread_mutex_lock(&spMutex); 
-        pid(temp_values, integral, initial_temp, derivative, step, set_point, response); 
+        // Control Function
+        pthread_mutex_lock(&spMutex);
+        pid(temp_values, integral, initial_temp, derivative, step, set_point, response);
         pthread_mutex_unlock(&spMutex);
 
-        //Write Response
+        // Write Response
         sprintf(buffer, "%d;%d;%d;%d", response[0], response[1], response[2], response[3]);
-        printf("RESPONSE: %s\n", buffer);
-        if(writeToPipe(pd->fd_response_pipe, buffer) != 0) printf("ERROR WRITING TO PIPE.\n");
+        // printf("RESPONSE: %s\n", buffer);
+        if (writeToPipe(pd->fd_response_pipe, buffer) < 0)
+            printf("ERROR WRITING TO PIPE.\n");
         sleep(step);
     }
 
     closePipes(pd);
     return 0;
-    
 }
 
-void setFrequency(int newFreq){
-    pthread_mutex_lock(&frequencyMutex); 
+void setFrequency(int newFreq)
+{
+    pthread_mutex_lock(&frequencyMutex);
     frequency = newFreq > 0 && newFreq < 6 ? newFreq : frequency;
     pthread_mutex_unlock(&frequencyMutex);
 }
 
-void userSetSetpoints(){
+void userSetSetpoints()
+{
     int choice = -1, idx;
     float sp, sps[4];
     printf("1. Change all setpoints\n2. Change all setpoints to one value \n3. Change one setpoint\n");
@@ -236,7 +242,7 @@ void userSetSetpoints(){
 
         setAllSetPoints(sp);
         break;
-    case 3: 
+    case 3:
         printf("Desired index [0-%d]:\n", N_HEATERS);
         scanf("%d", &idx);
 
@@ -245,14 +251,17 @@ void userSetSetpoints(){
 
         setSetPoint(sp, idx);
         break;
-    default: printf("Invalid choice.\n");
+    default:
+        printf("Invalid choice.\n");
         break;
     }
 }
 
-void ui(pthread_t *pidThread, PipeData *pd){
+void ui(pthread_t *pidThread, PipeData *pd)
+{
     int choice = -1, aux;
-    while(1){
+    while (1)
+    {
         printf("Thermal Control Function\n");
         enabled == 1 ? printf("1. Disable\n") : printf("1. Enable\n");
         printf("2. Change frequency\n3. Change setpoint\n4. Exit\n");
@@ -261,7 +270,14 @@ void ui(pthread_t *pidThread, PipeData *pd){
         switch (choice)
         {
         case 1:
-           enabled == 0 ? enableTCF(pidThread, pd): disableTCF(pidThread,pd);
+            if (enabled == 0)
+            {
+                enableTCF(pidThread, pd);
+            }
+            else
+            {
+                disableTCF(pidThread, pd);
+            }
             break;
         case 2:
             printf("Desired frequency: [1-5]\n");
@@ -269,14 +285,15 @@ void ui(pthread_t *pidThread, PipeData *pd){
             setFrequency(aux);
             break;
         case 3:
-            userSetSetpoints();  
+            userSetSetpoints();
             break;
-        case 4: return;
-        default: printf("Invalid choice.\n");
+        case 4:
+            return;
+        default:
+            printf("Invalid choice.\n");
             break;
         }
     }
-
 }
 
 int main(int argc, char **argv)
@@ -294,19 +311,20 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
-
-    if(createPipes() == -1) return -1;
-    if (pthread_mutex_init(&frequencyMutex, NULL) != 0) { 
-        printf("Mutex initialization has failed\n"); 
-        return -1; 
+    if (createPipes() == -1)
+        return -1;
+    if (pthread_mutex_init(&frequencyMutex, NULL) != 0)
+    {
+        printf("Mutex initialization has failed\n");
+        return -1;
     }
-     if (pthread_mutex_init(&spMutex, NULL) != 0) { 
-        printf("Mutex initialization has failed\n"); 
-        return -1; 
-    } 
+    if (pthread_mutex_init(&spMutex, NULL) != 0)
+    {
+        printf("Mutex initialization has failed\n");
+        return -1;
+    }
 
-    setAllSetPoints(0); //default
-
+    setAllSetPoints(0); // default
 
     setbuf(stdout, NULL);
 
@@ -324,8 +342,8 @@ int main(int argc, char **argv)
     ui(&pidThread, &pd);
 
     disableTCF(&pidThread, &pd);
-    pthread_mutex_destroy(&frequencyMutex); 
-    pthread_mutex_destroy(&spMutex); 
+    pthread_mutex_destroy(&frequencyMutex);
+    pthread_mutex_destroy(&spMutex);
 
     return 0;
 }
