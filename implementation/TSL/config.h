@@ -1,4 +1,5 @@
-#define _DEFAULT_SOURCE
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,8 +42,8 @@ typedef struct {
     int *new_heater_states;
 } ThreadArgs;
 
-struct sigaction sigint_action;
-struct sigaction sigtstp_action;
+extern struct sigaction sigint_action;
+extern struct sigaction sigtstp_action;
 
 // Inicialize all the functions
 void TSL_init(struct TSL_data *tsl);
@@ -58,3 +59,5 @@ void writeToCSVCorrect (const char *filename, const char *header, const char *da
 void writeToCSVError(const char *filename, const char *header, char *error,const char *timestamp);
 void* read_response_thread(void* args);
 void write_temp_info_pipe(char* message);
+
+#endif // CONFIG_H
