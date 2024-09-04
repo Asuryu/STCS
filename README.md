@@ -35,6 +35,6 @@ The TSL simulates the thermal environment of a spacecraft, including normal peri
 
 ### Thermal Control Function (TCF)
 The TCF uses PID control to maintain desired temperatures for each thermistor. It reads temperature data from the TSL and adjusts heater statuses accordingly to achieve the setpoints.
-ola
+
 ### Visualization User Interface (VUI)
 The VUI provides real-time visualization of temperature data and heater statuses. It plots temperature variations and heater operations, allowing users to monitor and analyze the thermal control system's performance.
