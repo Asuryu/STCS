@@ -49,10 +49,10 @@ const App: React.FC = () => {
     };
 
     ws.current.onmessage = (msg: MessageEvent) => {
-      console.log("Message received:", msg.data);
+      //console.log("Message received:", msg.data);
       try {
         const parsedData = eval(msg.data); // Use eval to handle non-JSON data format
-        console.log("Parsed data:", parsedData);
+        //console.log("Parsed data:", parsedData);
         const newData: DataPoint = {
           THERM_01: parsedData[0],
           THERM_02: parsedData[1],
@@ -69,8 +69,9 @@ const App: React.FC = () => {
         incomingData.current.push(newData);
         setLastData(newData);
 
+
         // Check for errors and update currentError and errorLogs
-        if (newData.ERROR && newData.ERROR != "null") {
+        if (newData.ERROR == null) {
           setCurrentError(
             `Error at ${new Date(newData.TIMESTAMP).toLocaleTimeString()}: ${
               newData.ERROR
@@ -115,19 +116,12 @@ const App: React.FC = () => {
       const now = new Date().getTime();
       const timeWindow = now - rangeTime * 1000;
 
-      setDisplayData((prevDisplayData) => {
-        const newDisplayData = [
-          ...prevDisplayData.filter(
-            (d) => new Date(d.TIMESTAMP).getTime() > timeWindow
-          ),
-          ...incomingData.current.filter(
-            (d) => new Date(d.TIMESTAMP).getTime() > timeWindow
-          ),
-        ];
-        console.log("Display data updated:", newDisplayData);
-        incomingData.current = []; // Clear incoming data buffer
-        return newDisplayData;
-      });
+      // Filter data based on timeWindow
+      const datapoints = incomingData.current.filter(
+        (entry) => new Date(entry.TIMESTAMP).getTime() > timeWindow
+      );
+      setDisplayData(datapoints);
+
     };
     const interval = setInterval(updateDisplayData, refreshTime * 1000); // Update display data based on refreshTime
     return () => clearInterval(interval);
