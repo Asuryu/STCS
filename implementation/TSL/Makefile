@@ -1,21 +1,16 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -pedantic -std=c99 -pthread
-TARGET = prog.o
-TARGET2 = pipetest.o
+TARGET = ../bin/TSL.o
 SRC = main.c
-SRC2 = pipetest.c
 HEADER = config.h
 
-all: $(TARGET) $(TARGET2)
+all: $(TARGET)
 
 $(TARGET): $(SRC) $(HEADER)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)
 
-$(TARGET2): $(SRC2) $(HEADER)
-	$(CC) $(CFLAGS) -o $(TARGET2) $(SRC2)
-
-clean:
-	rm -f $(TARGET) $(TARGET2)
-
 run: $(TARGET)
 	./$(TARGET)
+
+clean:
+	rm -f $(TARGET)

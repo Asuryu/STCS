@@ -1,5 +1,4 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#define _DEFAULT_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +16,7 @@
 #include <sys/time.h>
 #include <sys/select.h>
 
-#include "../TCF_TSL/config.h"
+#include "../project_config.h"
 
 // Define states and Bool Type
 #define NORMAL 1
@@ -28,7 +27,7 @@ typedef enum {false, true} bool;
 
 // Assigns each Thermistor to a Heater
 typedef struct ThermalPair {
-    int heater;
+    int heater; //  ON/OFF state (0 or 1)
     double thermistor;
 } ThermalPair;
 
@@ -42,22 +41,16 @@ typedef struct {
     int *new_heater_states;
 } ThreadArgs;
 
-extern struct sigaction sigint_action;
-extern struct sigaction sigtstp_action;
+struct sigaction sigint_action;
+struct sigaction sigtstp_action;
 
 // Inicialize all the functions
 void TSL_init(struct TSL_data *tsl);
-int cleanup();
-void handle_error(char *error);
 void verify_periods(struct TSL_data *tsl);
+
 void setHeaterState(struct ThermalPair* TP_block, int *heater_state);
 int modify_temperatures(struct ThermalPair *TP_block, int state);
 const char* get_timestamp();
-int file_exists(const char *filename);
-char * buildData (struct ThermalPair* TP_block,const char *timestamp, int state);
+char * buildData(struct ThermalPair* TP_block, const char *timestamp, int state);
 void writeToCSVCorrect (const char *filename, const char *header, const char *data);
 void writeToCSVError(const char *filename, const char *header, char *error,const char *timestamp);
-void* read_response_thread(void* args);
-void write_temp_info_pipe(char* message);
-
-#endif // CONFIG_H
