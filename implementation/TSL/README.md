@@ -1,16 +1,10 @@
 # Thermal Simulation Library (TSL)
 
-## How to build TSL
-Do the following steps inside TSL dir to run TSL:
-```
-make
-```
-
-
 ## How to run TSL
 Do the following steps inside TSL dir to run TSL:
 ```
-make run
+cd ../bin
+./TSL
 ```
 
 ## Interaction with TSL

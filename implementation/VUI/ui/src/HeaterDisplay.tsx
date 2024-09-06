@@ -21,7 +21,7 @@ const HeaterDisplay: React.FC<HeaterDisplayProps> = ({ temperature, index }) => 
       </div>
       <div>
         <h3 className="text-sm font-semibold text-gray-700">Heater {index + 1}</h3>
-        <p className="text-l font-bold text-gray-900">{temperature.toFixed(1)}°C</p>
+        <p className="text-l font-bold text-gray-900">{Math.round(temperature)}°C</p>
       </div>
     </div>
   );
