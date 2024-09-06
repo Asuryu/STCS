@@ -13,6 +13,7 @@ This project consists of a WebSocket-based real-time data visualization applicat
    Before running the server, ensure you have the necessary Python packages. You can use `pip` to install any required packages. The server depends on `websockets` and `csv` for handling WebSocket connections and reading CSV files, respectively.
 
    ```bash
+   cd server
    pip install -r requirements.txt
    ```
 
@@ -40,11 +41,9 @@ This project consists of a WebSocket-based real-time data visualization applicat
    Navigate to the frontend project directory and install the required dependencies using npm.
 
    ```bash
-   cd frontend_directory
+   cd ui
    npm install
    ```
-
-   Replace `frontend_directory` with the actual path to your frontend project.
 
 3. **Run the React Application**:
    Start the React application, making sure the server is running.

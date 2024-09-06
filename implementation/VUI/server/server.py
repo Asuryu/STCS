@@ -90,5 +90,5 @@ async def server_program(file_path):
     await server.wait_closed()
 
 if __name__ == "__main__":
-    file_path = '../../TSL/data.csv'
+    file_path = '../../data.csv'
     asyncio.run(server_program(file_path))
