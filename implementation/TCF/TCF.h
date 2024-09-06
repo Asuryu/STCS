@@ -16,7 +16,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "../TCF_TSL/config.h"
+#include "../project_config.h"
 
 #define N_HEATERS 4
 #define HISTORY_SIZE 2

@@ -1,5 +1,5 @@
-#include "tcf_main.h"
-#include "pid.h"
+#include "TCF.h"
+#include "PID.h"
 
 float temps[HISTORY_SIZE][N_HEATERS];
 unsigned int enabled;
