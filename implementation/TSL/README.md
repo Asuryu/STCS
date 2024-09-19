@@ -4,7 +4,7 @@
 Do the following steps inside TSL dir to run TSL:
 ```
 cd ../bin
-./TSL
+./TSL.o
 ```
 
 ## Interaction with TSL
